@@ -29,6 +29,7 @@ User Guide:
 2. 使用可执行文件
 
 1）进入release页面，找到相应版本的spider.exe可执行文件并下载。
+
    最新版本下载链接：https://github.com/huolongshe/spider/releases/download/v2.0.5/spider.exe
 
 2）在电脑中新建一个空文件夹，将spider.exe文件拷贝至该文件夹。
