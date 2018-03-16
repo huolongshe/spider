@@ -99,3 +99,14 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
+# Added by myself
+# Idea system files
+.idea/
+
+# Spider running files
+.cache/
+
+# my text files
+*.txt
