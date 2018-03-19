@@ -61,9 +61,9 @@ Spider户外轨迹编辑器
 
 2. 使用源码安装
 
-1）安装Python 3.6。
+    1）安装Python 3.6。
 
-2）下载wxPython4依赖包并安装。
+    2）下载wxPython4依赖包并安装。
 
     从 https://pypi.python.org/pypi/wxPython/4.0.1 选择相应的wxPython4依赖包下载，然后执行：
 
@@ -71,20 +71,20 @@ Spider户外轨迹编辑器
 
         pip install wxPython-4.0.1-cp36-cp36m-win_amd64.whl
 
-3）Clone或下载源代码。
+    3）Clone或下载源代码。
 
-4）进入spider.py所在文件夹，在命令行终端中执行：
+    4）进入spider.py所在文件夹，在命令行终端中执行：
 
         python spider.py
 
 2. 使用可执行文件安装
 
-1）进入release页面，找到相应版本的spider.exe可执行文件并下载。
+    1）进入release页面，找到相应版本的spider.exe可执行文件并下载。
 
    最新版本下载链接：https://github.com/huolongshe/spider/releases/download/v2.0.5/spider.exe
 
-2）在电脑中新建一个空文件夹，将spider.exe文件拷贝至该文件夹。
+    2）在电脑中新建一个空文件夹，将spider.exe文件拷贝至该文件夹。
 
-3）鼠标双击该文件夹中的spider.exe，打开并运行轨迹编辑器。
+    3）鼠标双击该文件夹中的spider.exe，打开并运行轨迹编辑器。
 
 
