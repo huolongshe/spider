@@ -5,9 +5,11 @@ Author: Longshe Huo
 Email: huolongshe@126.com
 
 
+
 Spider户外轨迹编辑器
 
 作者：霍龙社
+
 
 
 功能特性：
@@ -53,6 +55,7 @@ Spider户外轨迹编辑器
 10. 地图下载
 
     支持离线下载框选范围内任意缩放级别地图，并无缝拼接成一张大图片。
+
 
 
 安装运行:
