@@ -75,7 +75,7 @@ Spider户外轨迹编辑器
 
 4）进入spider.py所在文件夹，在命令行终端中执行：
 
-   python spider.py
+        python spider.py
 
 2. 使用可执行文件安装
 
