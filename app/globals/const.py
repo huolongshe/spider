@@ -2,7 +2,8 @@
 # -*- coding: UTF-8 -*-
 
 
-APP_NAME = '户外轨迹编辑器 v2.0.5'
+APP_NAME = 'Spider户外轨迹编辑器'
+APP_VERSION = 'v2.0.6'
 
 DB_FILE_NAME = 'data.db'
 CFG_FILE_NAME = 'last.yml'

@@ -3,6 +3,7 @@
 import os
 import copy
 import wx
+import wx.adv
 import wx.lib.agw.pybusyinfo as PBI
 
 from app.globals import const
@@ -28,7 +29,7 @@ from app.view.track_tree import TrackTree
 
 class MainFrame(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, None, title=const.APP_NAME)
+        wx.Frame.__init__(self, None, title='%s - %s' % (const.APP_NAME, const.APP_VERSION))
         self.g = GlobalData(self)
 
         self.init_splitter_windows()  # 需要在frame对象初始化之后，show之前，执行
@@ -1007,8 +1008,12 @@ class MainFrame(wx.Frame):
         self.g.track_chart.draw_alt_chart(track_line)
 
     def on_about(self, event):
-        dlg = AboutDlg()
-        dlg.CentreOnParent()
-        dlg.ShowModal()
-        dlg.Destroy()
+        about_info = wx.adv.AboutDialogInfo()
+        about_info.SetIcon(wx.Icon(app_icons.zhangjiashan.GetIcon()))
+        about_info.SetName(const.APP_NAME)
+        about_info.SetVersion(const.APP_VERSION)
+        about_info.SetCopyright('Copyright (C) 2017-2018 霍龙社')
+        about_info.SetWebSite('https://github.com/huolongshe/spider')
+
+        wx.adv.AboutBox(about_info)
         
