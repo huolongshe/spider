@@ -9,7 +9,6 @@ import wx.lib.agw.pybusyinfo as PBI
 from app.globals import const
 from app.globals.global_data import GlobalData
 from app.resource import app_icons
-from app.dialog.about_dlg import AboutDlg
 from app.dialog.default_pin_dlg import DefaultPinDlg
 from app.dialog.map_src_dlg import MapSrcDlg
 from app.dialog.search_dlg import WptSearchDlg, RouteSearchDlg
@@ -1014,6 +1013,5 @@ class MainFrame(wx.Frame):
         about_info.SetVersion(const.APP_VERSION)
         about_info.SetCopyright('Copyright (C) 2017-2018 霍龙社')
         about_info.SetWebSite('https://github.com/huolongshe/spider')
-
         wx.adv.AboutBox(about_info)
         
