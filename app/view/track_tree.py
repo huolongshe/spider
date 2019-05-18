@@ -216,7 +216,7 @@ class TrackTree(wx.TreeCtrl):
         menu = wx.Menu()
     
         menu.AppendSeparator()
-        text = '隐藏图钉' if wpt.is_visible else '显示图钉'
+        text = '隐藏路点' if wpt.is_visible else '显示路点'
         menu_item = menu.Append(-1, text)
         self._popup_context[menu_item.Id] = wpt
         self.Bind(wx.EVT_MENU, self.on_flap_wpt_visible, menu_item)
