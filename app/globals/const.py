@@ -3,7 +3,7 @@
 
 
 APP_NAME = 'Spider户外轨迹编辑器'
-APP_VERSION = 'v2.0.6'
+APP_VERSION = 'v2.0.7'
 
 DB_FILE_NAME = 'data.db'
 CFG_FILE_NAME = 'last.yml'
