@@ -43,7 +43,7 @@ google_satellite_hybrid = {
 
 google_topographic = {
     'name': '谷歌地形图',
-    'url': 'http://mt{$serverpart}.google.cn/vt/lyrs=t&hl=zh-CN&gl=cn&src=app&x={$x}&y={$y}&z={$z}',
+    'url': 'http://mt{$serverpart}.google.cn/vt/lyrs=t,r&hl=zh-CN&gl=cn&src=app&x={$x}&y={$y}&z={$z}',
     'zoom_min': 1,
     'zoom_max': 18,
     'server_part': '0,1,2,3',

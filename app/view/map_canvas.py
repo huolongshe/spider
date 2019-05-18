@@ -988,7 +988,7 @@ class MapCanvas(wx.Window):
             menu_item = menu.Append(-1, text)
             self.Bind(wx.EVT_MENU, self.g.frame.on_map_screenshot, menu_item)
         else:
-            text = '放置图钉'
+            text = '放置路点'
             menu_item = menu.Append(-1, text)
             self._popup_context[menu_item.Id] = pos
             self.Bind(wx.EVT_MENU, self.on_place_pin, menu_item)
@@ -1074,7 +1074,7 @@ class MapCanvas(wx.Window):
         self.Bind(wx.EVT_MENU, self.on_change_wpt_pin, menu_item)
 
         menu.AppendSeparator()
-        text = '隐藏图钉'
+        text = '隐藏路点'
         menu_item = menu.Append(-1, text)
         self._popup_context_wpt[menu_item.Id] = wpt
         self.Bind(wx.EVT_MENU, self.on_hide_wpt, menu_item)

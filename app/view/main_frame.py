@@ -14,6 +14,7 @@ from app.dialog.map_src_dlg import MapSrcDlg
 from app.dialog.search_dlg import WptSearchDlg, RouteSearchDlg
 from app.dialog.search_api_dlg import SearchApiDlg
 from app.dialog.srtm_src_dlg import SrtmSrcDlg
+from app.dialog.add_wpt_dlg import AddWptDlg
 from app.model.track_line import TrackLine
 from app.model.way_point import WayPoint
 from app.model.photo import Photo
@@ -24,6 +25,8 @@ from app.view.map_canvas import MapCanvas
 from app.view.track_chart import TrackChart
 from app.view.track_edit import TrackEdit
 from app.view.track_tree import TrackTree
+from app.service import transform
+from app.service import jiupian
 
 
 class MainFrame(wx.Frame):
@@ -219,14 +222,17 @@ class MainFrame(wx.Frame):
 
         menu_wpt_pin = wx.Menu()
         menu_bar.Append(menu_wpt_pin, '路点')
-        self._menu_default_pin = menu_wpt_pin.Append(-1, '更改默认图钉', '更改路点图钉的默认显示样式')
+        self._menu_default_pin = menu_wpt_pin.Append(-1, '更改路点图钉', '更改路点图钉的默认显示样式')
         self.Bind(wx.EVT_MENU, self.on_default_pin, self._menu_default_pin)
         menu_wpt_pin.AppendSeparator()
-        self._menu_hide_wpts = menu_wpt_pin.Append(-1, '隐藏所有图钉', '隐藏所有路点图钉')
+        self._menu_hide_wpts = menu_wpt_pin.Append(-1, '隐藏所有路点', '隐藏所有路点图钉')
         self.Bind(wx.EVT_MENU, self.on_hide_wpts, self._menu_hide_wpts)
         menu_wpt_pin.AppendSeparator()
         self._menu_del_all_wpts = menu_wpt_pin.Append(-1, '删除所有路点', '删除所有路点数据')
         self.Bind(wx.EVT_MENU, self.on_del_all_wpts, self._menu_del_all_wpts)
+        menu_wpt_pin.AppendSeparator()
+        self._menu_add_wpt_from_tile = menu_wpt_pin.Append(-1, '添加瓦片路点', '根据瓦片URL坐标添加路点')
+        self.Bind(wx.EVT_MENU, self.on_add_wpt_from_tile, self._menu_add_wpt_from_tile)
 
         menu_photo = wx.Menu()
         menu_bar.Append(menu_photo, '照片')
@@ -903,7 +909,29 @@ class MainFrame(wx.Frame):
         self.g.undo_list = [undo_action]
         self.enable_undo()
         do_log('已删除所有路点数据...')
-        
+
+    def on_add_wpt_from_tile(self, event):
+        dlg = AddWptDlg()
+        dlg.CentreOnParent()
+        if dlg.ShowModal() == wx.ID_OK:
+            if dlg.tile_x.GetValue() and dlg.tile_y.GetValue() and dlg.tile_z.GetValue():
+                tile_x = int(dlg.tile_x.GetValue())
+                tile_y = int(dlg.tile_y.GetValue())
+                zoom = int(dlg.tile_z.GetValue())
+                need_jiupian = dlg.need_jiupian.GetValue()
+                lon = transform.get_longitude_from_fpx(transform.get_fpx_from_px(tile_x * 256 + 128, zoom))
+                lat = transform.get_latitude_from_fpy(transform.get_fpy_from_py(tile_y * 256 + 128, zoom))
+                if need_jiupian:
+                    lon, lat = jiupian.gcj02_to_wgs84(lon, lat)
+                wpt = WayPoint('瓦片-x%d-y%d-z%d' % (tile_x, tile_y, zoom), lon, lat,
+                               parent=self.g.data_root.uuid, bmp_index=self.g.default_wpt_bmp_index)
+                self.g.add_data(self.g.data_root, wpt)
+                self.g.track_tree.SelectItem(wpt.tree_node)
+                self.repaint(const.REDRAW_COPY)
+            else:
+                do_log('瓦片x，y，z坐标都必须有值...')
+        dlg.Destroy()
+
     def on_srtm_src(self, event):
         dlg = SrtmSrcDlg(self.g)
         dlg.CentreOnParent()
