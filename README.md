@@ -5,6 +5,13 @@
 
 ---
 
+[![GitHub releases](https://img.shields.io/github/release/huolongshe/spider.svg)](https://github.com/huolongshe/spider/releases)
+[![GitHub downloads](https://img.shields.io/github/downloads/huolongshe/spider/total.svg)](https://github.com/huolongshe/spider/releases)
+[![GitHub issues](https://img.shields.io/github/issues/huolongshe/spider.svg)](https://github.com/huolongshe/spider/issues)
+[![GitHub forks](https://img.shields.io/github/forks/huolongshe/spider.svg)](https://github.com/huolongshe/spider/network)
+[![GitHub stars](https://img.shields.io/github/stars/huolongshe/spider.svg)](https://github.com/huolongshe/spider/stargazers)
+[![GitHub license](https://img.shields.io/github/license/huolongshe/spider.svg)](https://github.com/huolongshe/spider/blob/master/LICENSE)
+
 ### 功能特性：
 
 1. 支持大多数市面上最常用的互联网在线地图的在线显示和浏览。
