@@ -1,6 +1,7 @@
 ## Spider户外轨迹编辑器
 
-    霍龙社    huolongshe@126.com
+    霍龙社
+    huolongshe@126.com
 
 ---
 
