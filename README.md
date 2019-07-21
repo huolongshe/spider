@@ -1,16 +1,9 @@
 ## Spider户外轨迹编辑器
 
-    作者：霍龙社
-    Email: huolongshe@126.com
+    霍龙社
+    huolongshe@126.com
 
 ---
-
-[![GitHub releases](https://img.shields.io/github/release/huolongshe/spider.svg)](https://github.com/huolongshe/spider/releases)
-[![GitHub downloads](https://img.shields.io/github/downloads/huolongshe/spider/total.svg)](https://github.com/huolongshe/spider/releases)
-[![GitHub issues](https://img.shields.io/github/issues/huolongshe/spider.svg)](https://github.com/huolongshe/spider/issues)
-[![GitHub forks](https://img.shields.io/github/forks/huolongshe/spider.svg)](https://github.com/huolongshe/spider/network)
-[![GitHub stars](https://img.shields.io/github/stars/huolongshe/spider.svg)](https://github.com/huolongshe/spider/stargazers)
-[![GitHub license](https://img.shields.io/github/license/huolongshe/spider.svg)](https://github.com/huolongshe/spider/blob/master/LICENSE)
 
 ### 功能特性：
 
