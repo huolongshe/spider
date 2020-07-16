@@ -5,6 +5,7 @@ import copy
 import uuid
 import wx
 
+from app.globals.global_data import g
 from app.dialog.folder_style_dlg import FolderStyleDlg
 from app.dialog.track_style_dlg import TrackStyleDlg
 from app.globals import const
@@ -19,9 +20,8 @@ from app.model.way_point import WayPoint
 
 
 class TrackTree(wx.TreeCtrl):
-    def __init__(self, parent, g):
+    def __init__(self, parent):
         wx.TreeCtrl.__init__(self, parent=parent, style=wx.TR_DEFAULT_STYLE | wx.TR_HAS_BUTTONS | wx.TR_EDIT_LABELS)
-        self.g = g
         self._popup_context = {}  # 用于保存右键弹出菜单的菜单项上下文信息
 
         img_size = (16, 16)
@@ -33,9 +33,9 @@ class TrackTree(wx.TreeCtrl):
             self._wpt_idxes[i] = self._image_list.Add(eval('pin16_icons.pin%02d' % i).GetBitmap())
         self.SetImageList(self._image_list)
 
-        self._tree_root = self.AddRoot(text=self.g.data_root.name)
-        self.SetItemData(self._tree_root, self.g.data_root)
-        self.g.data_root.tree_node = self._tree_root
+        self._tree_root = self.AddRoot(text=g.data_root.name)
+        self.SetItemData(self._tree_root, g.data_root)
+        g.data_root.tree_node = self._tree_root
         self.SetItemImage(self._tree_root, self._folder_idx, wx.TreeItemIcon_Normal)
         self.SetItemImage(self._tree_root, self._folder_open_idx, wx.TreeItemIcon_Expanded)
         self.SetItemBold(self._tree_root)
@@ -52,7 +52,7 @@ class TrackTree(wx.TreeCtrl):
 
     def create_child_folder(self, parent_folder, name):
         child_folder = DataFolder(parent=parent_folder.uuid, name=name)
-        self.g.add_data(parent_folder, child_folder)
+        g.add_data(parent_folder, child_folder)
         return child_folder
 
     def add_tree_node(self, parent, child):
@@ -82,9 +82,9 @@ class TrackTree(wx.TreeCtrl):
                 self.set_track_image(child)
             elif isinstance(child, WayPoint):
                 if child.bmp_index < 0:
-                    child.bmp_index = self.g.default_wpt_bmp_index  # 不想在WayPoint类定义中注入全局变量g，所以把这两个参数的进一步初始化放到这儿
+                    child.bmp_index = g.default_wpt_bmp_index  # 不想在WayPoint类定义中注入全局变量g，所以把这两个参数的进一步初始化放到这儿
                 if child.alt <= 0:
-                    alt = self.g.srtm_mgr.get_alt_local(child.lon, child.lat)  # 同上, todo: 可能可以优化
+                    alt = g.srtm_mgr.get_alt_local(child.lon, child.lat)  # 同上, todo: 可能可以优化
                     if alt:
                         child.alt = alt
                 self.set_wpt_image(child)
@@ -122,16 +122,16 @@ class TrackTree(wx.TreeCtrl):
             self.SetItemBold(data.tree_node, False)
 
     def set_folder_visible(self, folder, visible):
-        for lst in [self.g.track_list, self.g.wpt_list]:
+        for lst in [g.track_list, g.wpt_list]:
             for child in lst:
                 if child.parent == folder.uuid:
                     child.is_visible = visible
-                    self.g.db_mgr.update_visible(child, commit=False)
+                    g.db_mgr.update_visible(child, commit=False)
                     self.label_visible_data(child)
-        for child_folder in self.g.folder_list:
+        for child_folder in g.folder_list:
             if child_folder.parent == folder.uuid:
                 self.set_folder_visible(child_folder, visible)
-        self.g.db_mgr.commit()
+        g.db_mgr.commit()
 
     def on_left_down(self, event):
         pt = event.GetPosition()
@@ -141,7 +141,7 @@ class TrackTree(wx.TreeCtrl):
             if isinstance(data, TrackLine):
                 if data.is_visible:
                     self.selected_track_line = data
-                    self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+                    g.frame.repaint(canvas=const.REDRAW_TRACK)
         event.Skip()
         
     def on_left_dclick(self, event):
@@ -152,14 +152,14 @@ class TrackTree(wx.TreeCtrl):
             if isinstance(data, TrackLine):
                 self.selected_track_line = data
                 data.is_visible = True
-                self.g.db_mgr.update_visible(data)
+                g.db_mgr.update_visible(data)
                 self.label_visible_data(data)
-                self.g.map_canvas.zoom_to_track_line(data)
+                g.map_canvas.zoom_to_track_line(data)
             elif isinstance(data, WayPoint):
                 data.is_visible = True
-                self.g.db_mgr.update_visible(data)
+                g.db_mgr.update_visible(data)
                 self.label_visible_data(data)
-                self.g.map_canvas.zoom_to_lon_lat(13, data.lon, data.lat)
+                g.map_canvas.zoom_to_lon_lat(13, data.lon, data.lat)
         event.Skip()
 
     def on_right_down(self, event):
@@ -239,7 +239,7 @@ class TrackTree(wx.TreeCtrl):
         track_line_copy.uuid = uuid.uuid1().__str__()
         track_line_copy.name = '副本_' + track_line.name
         track_line_copy.order_in_parent = -1
-        self.g.track_edit.add_track_line(track_line_copy)
+        g.track_edit.add_track_line(track_line_copy)
 
     def on_save_kml(self, event):
         data = self._popup_context[event.Id]
@@ -256,7 +256,7 @@ class TrackTree(wx.TreeCtrl):
             path = dlg.GetPath()
             try:
                 with open(path, 'wb') as fn:
-                    fn.write(write_kml(data, self.g).encode('utf-8'))
+                    fn.write(write_kml(data).encode('utf-8'))
             except:
                 do_log('kml文件写入出错...')
         dlg.Destroy()
@@ -276,18 +276,18 @@ class TrackTree(wx.TreeCtrl):
                                        dlg.display_end_points.GetValue(),
                                        dlg.dash_style.GetSelection())
             self.set_track_image(track_line)
-            self.g.db_mgr.update_track_style(track_line)
-            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+            g.db_mgr.update_track_style(track_line)
+            g.frame.repaint(canvas=const.REDRAW_TRACK)
         dlg.Destroy()
 
     def on_flap_track_visible(self, event):
         track_line = self._popup_context[event.Id]
         track_line.is_visible = not track_line.is_visible
-        self.g.db_mgr.update_visible(track_line)
+        g.db_mgr.update_visible(track_line)
         self.label_visible_data(track_line)
         if track_line is self.selected_track_line:
             self.selected_track_line = None
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def on_delete_track(self, event):
         dlg = wx.MessageDialog(self, '确认删除该轨迹？',
@@ -303,26 +303,26 @@ class TrackTree(wx.TreeCtrl):
         undo_action = {}
         undo_action['action'] = 'tree_del_track'
         undo_action['track'] = track_line
-        self.g.undo_list = []
-        self.g.undo_list.append(undo_action)
+        g.undo_list = []
+        g.undo_list.append(undo_action)
         if track_line is self.selected_track_line:
             self.selected_track_line = None
-        self.g.del_track_line(track_line)
-        self.g.frame.enable_undo()
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.del_track_line(track_line)
+        g.frame.enable_undo()
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
         do_log('轨迹“%s”被删除...' % track_line.name)
 
     def on_flap_wpt_visible(self, event):
         wpt = self._popup_context[event.Id]
         wpt.is_visible = not wpt.is_visible
-        self.g.db_mgr.update_visible(wpt)
+        g.db_mgr.update_visible(wpt)
         self.label_visible_data(wpt)
-        self.g.frame.repaint(canvas=const.REDRAW_COPY)
+        g.frame.repaint(canvas=const.REDRAW_COPY)
 
     def on_delete_wpt(self, event):
         wpt = self._popup_context[event.Id]
-        self.g.del_wpt(wpt)
-        self.g.frame.repaint(canvas=const.REDRAW_COPY)
+        g.del_wpt(wpt)
+        g.frame.repaint(canvas=const.REDRAW_COPY)
         do_log('路点“%s”被删除...' % wpt.name)
 
     def popup_folder_operations(self, folder):
@@ -345,7 +345,7 @@ class TrackTree(wx.TreeCtrl):
         self._popup_context[menu_item.Id] = folder
         self.Bind(wx.EVT_MENU, self.on_create_file_folder, menu_item)
 
-        if folder is not self.g.data_root:
+        if folder is not g.data_root:
             menu.AppendSeparator()
             text = '删除文件夹'
             menu_item = menu.Append(-1, text)
@@ -374,7 +374,7 @@ class TrackTree(wx.TreeCtrl):
         menu.Destroy()
 
     def on_open_file(self, event):
-        self.choose_file_and_open(self.g.data_root)
+        self.choose_file_and_open(g.data_root)
 
     def on_open_file_in_folder(self, event):
         parent_folder = self._popup_context[event.Id]
@@ -416,8 +416,8 @@ class TrackTree(wx.TreeCtrl):
                 continue
             
             for data in data_list:
-                data_parent = self.g.get_parent_folder(data)
-                self.g.add_data(data_parent, data, commit=False)
+                data_parent = g.get_parent_folder(data)
+                g.add_data(data_parent, data, commit=False)
                 if isinstance(data, TrackLine):
                     fpx_min_list.append(data.fpx_min)
                     fpx_max_list.append(data.fpx_max)
@@ -432,7 +432,7 @@ class TrackTree(wx.TreeCtrl):
                     fpy_max_list.append(data.fpy)
                     if not first_wpt:
                         first_wpt = data
-        self.g.db_mgr.commit()
+        g.db_mgr.commit()
 
         if fpx_min_list:
             if first_track:
@@ -440,8 +440,8 @@ class TrackTree(wx.TreeCtrl):
                 self.SelectItem(first_track.tree_node)
             elif first_wpt:
                 self.SelectItem(first_wpt.tree_node)
-            self.g.map_canvas.zoom_to_range(min(fpx_min_list), max(fpx_max_list), min(fpy_min_list), max(fpy_max_list))
-            self.g.frame.repaint(const.REDRAW_NONE)
+            g.map_canvas.zoom_to_range(min(fpx_min_list), max(fpx_max_list), min(fpy_min_list), max(fpy_max_list))
+            g.frame.repaint(const.REDRAW_NONE)
             do_log('轨迹文件加载完成...')
         else:
             do_log('轨迹文件无内容...')
@@ -464,26 +464,26 @@ class TrackTree(wx.TreeCtrl):
             if ret != wx.ID_YES:
                 return
         
-            deleted = self.g.del_folder(folder, commit=False)
-            self.g.db_mgr.commit()
+            deleted = g.del_folder(folder, commit=False)
+            g.db_mgr.commit()
             if self.selected_track_line in deleted:
                 self.selected_track_line = None
 
             undo_action = {}
             undo_action['action'] = 'tree_del_folder'
             undo_action['deleted'] = deleted
-            self.g.undo_list = []
-            self.g.undo_list.append(undo_action)
+            g.undo_list = []
+            g.undo_list.append(undo_action)
 
-            self.g.frame.enable_undo()
-            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+            g.frame.enable_undo()
+            g.frame.repaint(canvas=const.REDRAW_TRACK)
             do_log('文件夹“%s”被删除...' % folder.name)
 
     def on_display_all(self, event):
         folder = self._popup_context[event.Id]
         if folder:
             self.set_folder_visible(folder, True)
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def on_hide_all(self, event):
         folder = self._popup_context[event.Id]
@@ -491,7 +491,7 @@ class TrackTree(wx.TreeCtrl):
             self.set_folder_visible(folder, False)
         if self.selected_track_line and not self.selected_track_line.is_visible:
             self.selected_track_line = None
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def on_edit_folder_style(self, event):
         folder = self._popup_context[event.Id]
@@ -507,19 +507,19 @@ class TrackTree(wx.TreeCtrl):
                 draw_endpoints = dlg.display_end_points.GetValue()
                 self.set_folder_style(folder, red, green, blue, width, draw_endpoints, dashed)
 
-                self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+                g.frame.repaint(canvas=const.REDRAW_TRACK)
             dlg.Destroy()
 
     def set_folder_style(self, folder, red, green, blue, width, draw_endpoints, dashed):
-        for child in self.g.track_list:
+        for child in g.track_list:
             if child.parent == folder.uuid:
                 child.set_track_style(red, green, blue, width, draw_endpoints, dashed)
                 self.set_track_image(child)
-                self.g.db_mgr.update_track_style(child, commit=False)
-        for child_folder in self.g.folder_list:
+                g.db_mgr.update_track_style(child, commit=False)
+        for child_folder in g.folder_list:
             if child_folder.parent == folder.uuid:
                 self.set_folder_style(child_folder, red, green, blue, width, draw_endpoints, dashed)
-        self.g.db_mgr.commit()
+        g.db_mgr.commit()
 
     def on_begin_drag(self, event):
         node = event.GetItem()
@@ -553,16 +553,16 @@ class TrackTree(wx.TreeCtrl):
                 src_data.order_in_parent = 1000
             else:
                 src_data.order_in_parent = self.GetItemData(self.GetLastChild(dst_parent_node)).order_in_parent + 1000
-        self.g.db_mgr.update_order_in_parent(src_data)
+        g.db_mgr.update_order_in_parent(src_data)
         dst_parent_data = self.GetItemData(dst_parent_node)
 
         if dst_parent_data is not src_parent_data:
             src_data.parent = dst_parent_data.uuid
-            self.g.db_mgr.update_parent_uuid(src_data, dst_parent_data.uuid)
+            g.db_mgr.update_parent_uuid(src_data, dst_parent_data.uuid)
 
         if isinstance(src_data, DataFolder):
-            if self.g.folder_list.index(src_data) < self.g.folder_list.index(dst_parent_data):
-                self.g.del_and_append_folder(src_data)
+            if g.folder_list.index(src_data) < g.folder_list.index(dst_parent_data):
+                g.del_and_append_folder(src_data)
 
         self.Delete(self._src_node)
 
@@ -574,13 +574,13 @@ class TrackTree(wx.TreeCtrl):
 
     def add_tree_folder(self, parent, child):  # 仅在树上节点移动时在on_end_drag中被调用
         node = self.add_tree_node(parent, child)
-        for folder in self.g.folder_list:
+        for folder in g.folder_list:
             if folder.parent == child.uuid:
                 self.add_tree_folder(child, folder)
-        for track_line in self.g.track_list:
+        for track_line in g.track_list:
             if track_line.parent == child.uuid:
                 self.add_tree_node(child, track_line)
-        for wpt in self.g.wpt_list:
+        for wpt in g.wpt_list:
             if wpt.parent == child.uuid:
                 self.add_tree_node(child, wpt)
         return node
@@ -610,7 +610,7 @@ class TrackTree(wx.TreeCtrl):
             return
         data = self.GetItemData(node)
         data.name = name
-        self.g.db_mgr.update_name(data)
+        g.db_mgr.update_name(data)
         if self.selected_track_line is data:
-            self.g.frame.repaint(canvas=const.REDRAW_NONE)
+            g.frame.repaint(canvas=const.REDRAW_NONE)
 

@@ -11,9 +11,8 @@ from app.model.photo import Photo
 
 
 class DbManager:
-    def __init__(self, g):
-        self.g = g
-        self._db_path = os.path.join(self.g.data_path, const.DB_FILE_NAME)
+    def __init__(self, data_path):
+        self._db_path = os.path.join(data_path, const.DB_FILE_NAME)
         self._conn = None
         self._cursor = None
         self.open_db()

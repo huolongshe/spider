@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import wx
+from app.globals.global_data import g
 
 
 class WptSearchDlg(wx.Dialog):
@@ -15,7 +16,7 @@ class WptSearchDlg(wx.Dialog):
         
         
 class RouteSearchDlg(wx.Dialog):
-    def __init__(self, g):
+    def __init__(self):
         wx.Dialog.__init__(self, None, -1, '搜索行车路线', size=(500,320))
 
         wx.StaticText(self, -1, '起点：', (50, 50))

@@ -7,7 +7,7 @@ import wx.adv
 import wx.lib.agw.pybusyinfo as PBI
 
 from app.globals import const
-from app.globals.global_data import GlobalData
+from app.globals.global_data import g
 from app.resource import app_icons
 from app.dialog.default_pin_dlg import DefaultPinDlg
 from app.dialog.map_src_dlg import MapSrcDlg
@@ -32,7 +32,7 @@ from app.service import jiupian
 class MainFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, title='%s - %s' % (const.APP_NAME, const.APP_VERSION))
-        self.g = GlobalData(self)
+        g.load_global_data(self)
 
         self.init_splitter_windows()  # 需要在frame对象初始化之后，show之前，执行
         self.create_menu_bar()  # 需要在self.init_splitter_windows()之后调用，因为其中引用到了生成的子窗口
@@ -52,12 +52,12 @@ class MainFrame(wx.Frame):
         # EVT_SIZE绑定后，全屏会显示不全；目前wx4中解绑定失败，所以暂时注解掉...
 
         busy = PBI.PyBusyInfo('数据加载中，请稍候...', parent=None, title='正在启动>>>')
-        self.g.map_canvas.init_after_frame_shown()  # 需要在frame对象初始化并show之后再执行
-        self.g.init_data_and_add_to_tree()
+        g.map_canvas.init_after_frame_shown()  # 需要在frame对象初始化并show之后再执行
+        g.init_data_and_add_to_tree()
         del busy
 
     def on_maximize(self, event):
-        if self.g.full_screen:
+        if g.full_screen:
             return
         self._splitter_left.SetSashPosition(self.GetSize().height * 3 // 5, True)
         self._splitter_middle.SetSashPosition(self.GetSize().height * 3 // 4, True)
@@ -66,7 +66,7 @@ class MainFrame(wx.Frame):
         self._splitter_top.SetSashPosition(self.GetSize().width * 7 // 8, True)
 
     def on_resize(self, event):
-        if self.g.full_screen:
+        if g.full_screen:
             return
         self._splitter_left.SetSashPosition(self.GetSize().height * 3 // 5, True)
         self._splitter_middle.SetSashPosition(self.GetSize().height * 3 // 4, True)
@@ -75,7 +75,7 @@ class MainFrame(wx.Frame):
         self._splitter_top.SetSashPosition(self.GetSize().width * 7 // 8, True)
 
     def on_close(self, event):
-        if self.g.edit_track_list:
+        if g.edit_track_list:
             dlg = wx.MessageDialog(self, '编辑区内容在退出时将清空，建议备份后再退出。\n确认退出？',
                                    '真的退出？',
                                    wx.YES_NO
@@ -85,27 +85,27 @@ class MainFrame(wx.Frame):
             if ret != wx.ID_YES:
                 return
 
-        self.g.write_cfg()
+        g.write_cfg()
 
-        self.g.db_mgr.close_db()
+        g.db_mgr.close_db()
         self.Destroy()
 
     def show_status_info(self, show_map=False, show_edit_status=False, zoom=None, pos=None):
         if show_map:
-            if self.g.hide_map:
+            if g.hide_map:
                 self._status_bar.SetStatusText('当前地图源：无')
                 return
             current_maps_str = ''
-            for map_source in self.g.map_list_main:
+            for map_source in g.map_list_main:
                 if map_source.is_visible:
                     current_maps_str += (map_source.name + '  ')
-            for map_source in self.g.map_list_trans[-1::-1]:
+            for map_source in g.map_list_trans[-1::-1]:
                 if map_source.is_visible:
                     current_maps_str += (map_source.name + '  ')
             self._status_bar.SetStatusText('当前地图源：%s' % current_maps_str, 0)
             
         if show_edit_status:
-            self._status_bar.SetStatusText('当前状态：' + ('编辑' if self.g.in_editing else '浏览'), 1)
+            self._status_bar.SetStatusText('当前状态：' + ('编辑' if g.in_editing else '浏览'), 1)
             
         if zoom:
             self._status_bar.SetStatusText('缩放级别：%d' % zoom, 2)
@@ -127,16 +127,16 @@ class MainFrame(wx.Frame):
 
         self._splitter_left = wx.SplitterWindow(self._splitter_leftmiddle, style=wx.SP_3D)
         self._splitter_left.SetMinimumPaneSize(1)
-        self.g.track_tree = TrackTree(parent=self._splitter_left, g=self.g)
-        self.g.track_edit = TrackEdit(parent=self._splitter_left, g=self.g)
-        self._splitter_left.SplitHorizontally(self.g.track_tree, self.g.track_edit)
+        g.track_tree = TrackTree(parent=self._splitter_left)
+        g.track_edit = TrackEdit(parent=self._splitter_left)
+        self._splitter_left.SplitHorizontally(g.track_tree, g.track_edit)
         self._splitter_left.SetSashPosition(self.GetSize().height * 3 // 5, True)
 
         self._splitter_middle = wx.SplitterWindow(self._splitter_leftmiddle, style=wx.SP_3D)
         self._splitter_middle.SetMinimumPaneSize(1)
-        self.g.map_canvas = MapCanvas(parent=self._splitter_middle, g=self.g)
-        self.g.track_chart = TrackChart(parent=self._splitter_middle, g=self.g)
-        self._splitter_middle.SplitHorizontally(self.g.map_canvas, self.g.track_chart)
+        g.map_canvas = MapCanvas(parent=self._splitter_middle)
+        g.track_chart = TrackChart(parent=self._splitter_middle)
+        self._splitter_middle.SplitHorizontally(g.map_canvas, g.track_chart)
         self._splitter_middle.SetSashPosition(self.GetSize().height * 3 // 4, True)
 
         self._splitter_leftmiddle.SplitVertically(self._splitter_left, self._splitter_middle)
@@ -144,18 +144,18 @@ class MainFrame(wx.Frame):
 
         self._splitter_right = wx.SplitterWindow(self._splitter_top, style=wx.SP_3D)
         self._splitter_right.SetMinimumPaneSize(1)
-        self.g.track_details = wx.TextCtrl(self._splitter_right, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
-        self.g.logger = wx.TextCtrl(self._splitter_right, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
-        wx.Log.SetActiveTarget(wx.LogTextCtrl(self.g.logger))
+        g.track_details = wx.TextCtrl(self._splitter_right, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
+        g.logger = wx.TextCtrl(self._splitter_right, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
+        wx.Log.SetActiveTarget(wx.LogTextCtrl(g.logger))
 
-        self._splitter_right.SplitHorizontally(self.g.track_details, self.g.logger)
+        self._splitter_right.SplitHorizontally(g.track_details, g.logger)
         self._splitter_right.SetSashPosition(self.GetSize().height * 3 // 5, True)
 
         self._splitter_top.SplitVertically(self._splitter_leftmiddle, self._splitter_right)
         self._splitter_top.SetSashPosition(self.GetSize().width * 7 // 8, True)
 
-        self.g.track_tree.Enable(True)
-        self.g.track_edit.Enable(False)
+        g.track_tree.Enable(True)
+        g.track_edit.Enable(False)
 
 
     def create_menu_bar(self):
@@ -165,7 +165,7 @@ class MainFrame(wx.Frame):
         menu_file = wx.Menu()
         menu_bar.Append(menu_file, '文件')
         self._menu_open = menu_file.Append(-1, '导入轨迹文件', '导入轨迹文件')
-        self.Bind(wx.EVT_MENU, self.g.track_tree.on_open_file, self._menu_open)
+        self.Bind(wx.EVT_MENU, g.track_tree.on_open_file, self._menu_open)
         menu_file.AppendSeparator()
         menu_quit = menu_file.Append(-1, '退出', '退出程序')
         self.Bind(wx.EVT_MENU, self.on_close, menu_quit)
@@ -281,7 +281,7 @@ class MainFrame(wx.Frame):
         tb.SetToolBitmapSize(bar_size)
 
         self._tb_open = tb.AddTool(-1, label='导入轨迹文件', bitmap=open_bmp, shortHelp='导入轨迹文件')
-        self.Bind(wx.EVT_TOOL, self.g.track_tree.on_open_file, self._tb_open)
+        self.Bind(wx.EVT_TOOL, g.track_tree.on_open_file, self._tb_open)
         tb.AddSeparator()
         tb_map_dlg = tb.AddTool(-1, label='配置在线地图', bitmap=map_dlg_bmp, shortHelp='查看/配置在线地图源')
         self.Bind(wx.EVT_TOOL, self.on_map_src_dlg, tb_map_dlg)
@@ -324,29 +324,29 @@ class MainFrame(wx.Frame):
         return tb
 
     def on_map_src_dlg(self, event):
-        dialog = MapSrcDlg(self.g)
+        dialog = MapSrcDlg()
         dialog.CentreOnParent()
         dialog.ShowModal()
         dialog.Destroy()
 
     def on_map_hide(self, event):
-        if self.g.hide_map:
-            self.g.hide_map = False
+        if g.hide_map:
+            g.hide_map = False
             self._menu_map_hide.SetItemLabel('隐藏所有地图')
         else:
-            self.g.hide_map = True
+            g.hide_map = True
             self._menu_map_hide.SetItemLabel('显示在线地图')
             self.show_status_info(show_map=True)
         self.repaint(canvas=const.REDRAW_MAP)
 
     def on_map_full_screen(self, event):
-        if self.g.full_screen:
-            self.g.full_screen = False
+        if g.full_screen:
+            g.full_screen = False
             self.ShowFullScreen(False)
             self.Maximize()
             # self.Bind(wx.EVT_SIZE, self.on_resize, self)
         else:
-            self.g.full_screen = True
+            g.full_screen = True
             # self.Unbind(wx.EVT_SIZE, handler=self.on_resize, source=self)  # 解除EVT_SIZE绑定后全屏才能成功。todo:此处解绑不成功
             self.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
             self._splitter_middle.SetSashPosition(self.GetSize().height-1, True)
@@ -363,8 +363,8 @@ class MainFrame(wx.Frame):
         if ret != wx.ID_YES:
             return
         do_log('开始清空地图缓存...')
-        self.g.map_canvas.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
-        root_dir = self.g.tile_mgr.get_cache_path()
+        g.map_canvas.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
+        root_dir = g.tile_mgr.get_cache_path()
         file_list = os.listdir(root_dir)
         for f in file_list:
             file_path = os.path.join(root_dir, f)
@@ -373,13 +373,13 @@ class MainFrame(wx.Frame):
                     os.remove(file_path)
                 except:
                     pass
-        self.g.map_canvas.SetCursor(wx.STANDARD_CURSOR)
+        g.map_canvas.SetCursor(wx.STANDARD_CURSOR)
         do_log('地图缓存清空完毕！')
 
     def on_map_download(self, event):
-        self.g.downloading_map = True
+        g.downloading_map = True
         do_log('请按住鼠标左键拖动来框选欲下载区域...')
-        self.g.map_canvas.SetCursor(wx.Cursor(wx.CURSOR_SIZING))
+        g.map_canvas.SetCursor(wx.Cursor(wx.CURSOR_SIZING))
         
     def on_map_screenshot(self, event):
         dlg = wx.FileDialog(
@@ -391,9 +391,9 @@ class MainFrame(wx.Frame):
         dlg.SetFilterIndex(0)
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
-            bmp = wx.Bitmap(self.g.map_canvas.GetSize().width, self.g.map_canvas.GetSize().height)
+            bmp = wx.Bitmap(g.map_canvas.GetSize().width, g.map_canvas.GetSize().height)
             mdc = wx.MemoryDC(bmp)
-            mdc.Blit(0, 0, self.g.map_canvas.GetSize().width, self.g.map_canvas.GetSize().height, self.g.map_canvas._dc, 0, 0)
+            mdc.Blit(0, 0, g.map_canvas.GetSize().width, g.map_canvas.GetSize().height, g.map_canvas._dc, 0, 0)
             mdc.SelectObject(wx.NullBitmap)
 
             if path[-4:] == '.bmp':  # JPG文件压缩失真太狠，无法调整，因此缺省将bmp格式放在第一个
@@ -407,8 +407,8 @@ class MainFrame(wx.Frame):
         dlg.Destroy()
         
     def on_edit_status(self, event):
-        if self.g.in_editing:
-            self.g.in_editing = False
+        if g.in_editing:
+            g.in_editing = False
             self._menu_edit_status.SetItemLabel('进入编辑状态')
             self._menu_map_download.Enable(True)
             self._menu_set_start_pt.Enable(False)
@@ -434,11 +434,11 @@ class MainFrame(wx.Frame):
             self._tb_split.Enable(False)
             self._tb_merge.Enable(False)
             self._tb_open.Enable(True)
-            self.g.track_tree.Enable(True)
-            self.g.track_edit.Enable(False)
-            self.g.track_tree.selected_track_line = None
+            g.track_tree.Enable(True)
+            g.track_edit.Enable(False)
+            g.track_tree.selected_track_line = None
         else:
-            self.g.in_editing = True
+            g.in_editing = True
             self._menu_edit_status.SetItemLabel('退出编辑状态')
             self._menu_map_download.Enable(False)
             self._menu_set_start_pt.Enable(True)
@@ -464,41 +464,41 @@ class MainFrame(wx.Frame):
             self._tb_split.Enable(True)
             self._tb_merge.Enable(True)
             self._tb_open.Enable(False)
-            self.g.track_tree.Enable(False)
-            self.g.track_edit.Enable(True)
-            self.g.track_edit.selected_track_line = None
+            g.track_tree.Enable(False)
+            g.track_edit.Enable(True)
+            g.track_edit.selected_track_line = None
 
-        self.g.undo_list = []
+        g.undo_list = []
         self.enable_undo(False)
         self.show_status_info(show_edit_status=True)
         self.repaint(canvas=const.REDRAW_TRACK)
 
     def on_set_start_pt(self, event):
-        track_line = self.g.track_edit.selected_track_line
+        track_line = g.track_edit.selected_track_line
         if track_line and track_line.selected_point:
             track_point = track_line.selected_point
             track_line.sel_start_idx = track_line.track_points.index(track_point)
             if track_line.sel_start_idx > track_line.sel_end_idx:
                 track_line.sel_end_idx = track_line.point_num - 1
-            self.g.map_canvas.redraw_edit_selected_track_line()
+            g.map_canvas.redraw_edit_selected_track_line()
             self.repaint(canvas=const.REDRAW_NONE)
         else:
             do_log('请先选择轨迹点...')
 
     def on_set_end_pt(self, event):
-        track_line = self.g.track_edit.selected_track_line
+        track_line = g.track_edit.selected_track_line
         if track_line and track_line.selected_point:
             track_point = track_line.selected_point
             track_line.sel_end_idx = track_line.track_points.index(track_point)
             if track_line.sel_end_idx < track_line.sel_start_idx:
                 track_line.sel_start_idx = 0
-            self.g.map_canvas.redraw_edit_selected_track_line()
+            g.map_canvas.redraw_edit_selected_track_line()
             self.repaint(canvas=const.REDRAW_NONE)
         else:
             do_log('请先选择轨迹点...')
 
     def on_delete_segment(self, event):
-        track_line = self.g.track_edit.selected_track_line
+        track_line = g.track_edit.selected_track_line
         if track_line is None:
             do_log('请选择轨迹段...')
             return
@@ -517,11 +517,11 @@ class MainFrame(wx.Frame):
             undo_action = {}
             undo_action['action'] = 'edit_del_track'
             undo_action['track'] = track_line
-            self.g.undo_list = [undo_action]
-            self.g.track_edit.set_selected_track_line(None)
-            sel_index = self.g.edit_track_list.index(track_line)
-            self.g.track_edit.DeleteItem(sel_index)
-            self.g.edit_track_list.pop(sel_index)
+            g.undo_list = [undo_action]
+            g.track_edit.set_selected_track_line(None)
+            sel_index = g.edit_track_list.index(track_line)
+            g.track_edit.DeleteItem(sel_index)
+            g.edit_track_list.pop(sel_index)
             self.enable_undo()
             do_log('轨迹“%s”被删除...' % track_line.name)
         else:
@@ -531,18 +531,18 @@ class MainFrame(wx.Frame):
             undo_action['start'] = track_line.sel_start_idx
             undo_action['end'] = track_line.sel_end_idx
             undo_action['del_seg'] = track_line.track_points[track_line.sel_start_idx : track_line.sel_end_idx + 1]
-            self.g.undo_list = [undo_action]
+            g.undo_list = [undo_action]
             track_line.track_points[track_line.sel_start_idx : track_line.sel_end_idx + 1] = []
             track_line.selected_point = None
             track_line.compute_track_line_args()
-            self.g.track_edit.set_selected_track_line(None)
+            g.track_edit.set_selected_track_line(None)
             self.enable_undo()
             do_log('选中轨迹段(%d点)被删除...' % len(undo_action['del_seg']))
 
         self.repaint(canvas=const.REDRAW_TRACK)
 
     def on_delete_point(self, event):
-        track_line = self.g.track_edit.selected_track_line
+        track_line = g.track_edit.selected_track_line
         if track_line is None or track_line.selected_point is None:
             do_log('请先选择轨迹点...')
             return
@@ -558,14 +558,14 @@ class MainFrame(wx.Frame):
         undo_action['track'] = track_line
         undo_action['index'] = index
         undo_action['point'] = track_point
-        self.g.undo_list = [undo_action]
+        g.undo_list = [undo_action]
         
         track_line.track_points.pop(index)
         track_line.compute_track_line_args()
         if index > track_line.point_num - 1:
             index -= 1
         track_line.selected_point = track_line.track_points[index]
-        self.g.track_edit.set_selected_track_line(track_line)
+        g.track_edit.set_selected_track_line(track_line)
 
         self.enable_undo()
         do_log('选中轨迹点(%d)被删除...' % undo_action['index'])
@@ -573,13 +573,13 @@ class MainFrame(wx.Frame):
         self.repaint(canvas=const.REDRAW_TRACK)
 
     def on_split(self, event):
-        track_line = self.g.track_edit.selected_track_line
+        track_line = g.track_edit.selected_track_line
         if track_line is None or track_line.selected_point is None:
             do_log('请先选择轨迹点...')
             return
         track_point = track_line.selected_point
 
-        item = self.g.edit_track_list.index(track_line)
+        item = g.edit_track_list.index(track_line)
         index = track_line.track_points.index(track_point)
         if index < 10 or index > track_line.point_num - 10:
             do_log('分割点距起始点太近，操作无效...')
@@ -590,7 +590,7 @@ class MainFrame(wx.Frame):
         track2 = copy.deepcopy(track1)
         track1.track_points[index + 1:] = []
         track1.compute_track_line_args()
-        self.g.track_edit.set_selected_track_line(track1)
+        g.track_edit.set_selected_track_line(track1)
         track1.name = '分割1_' + track1.name
 
         track2.track_points[0:index + 1] = []
@@ -600,16 +600,16 @@ class MainFrame(wx.Frame):
         track2.selected_point = None
         track2.name = '分割2_' + track2.name
 
-        self.g.track_edit.SetItemText(item, track1.name)
-        self.g.track_edit.InsertStringItem(item + 1, track2.name)
-        self.g.edit_track_list.insert(item + 1, track2)
+        g.track_edit.SetItemText(item, track1.name)
+        g.track_edit.InsertStringItem(item + 1, track2.name)
+        g.edit_track_list.insert(item + 1, track2)
 
         undo_action = {}
         undo_action['action'] = 'split'
         undo_action['track_org'] = track_org
         undo_action['track1'] = track1
         undo_action['track2'] = track2
-        self.g.undo_list = [undo_action]
+        g.undo_list = [undo_action]
 
         self.enable_undo()
         do_log('轨迹“%s”被分割为两段...' % track_org.name)
@@ -620,7 +620,7 @@ class MainFrame(wx.Frame):
         item1 = 0
         i = 0
         org_track_list = []
-        for track_line in self.g.edit_track_list:
+        for track_line in g.edit_track_list:
             if track_line.is_checked:
                 track1 = track_line
                 org_track_list.append(copy.deepcopy(track1))
@@ -633,8 +633,8 @@ class MainFrame(wx.Frame):
             return
 
         item2_list = []
-        for j in range(i + 1, len(self.g.edit_track_list)):
-            if self.g.edit_track_list[j].is_checked:
+        for j in range(i + 1, len(g.edit_track_list)):
+            if g.edit_track_list[j].is_checked:
                 item2_list.append(j)
 
         if not item2_list:
@@ -642,7 +642,7 @@ class MainFrame(wx.Frame):
             return
 
         for item2 in item2_list:
-            track2 = self.g.edit_track_list[item2]
+            track2 = g.edit_track_list[item2]
             track1.track_points[len(track1.track_points):] = track2.track_points
             if not track2.has_timestamp:
                 track1.has_timestamp = False
@@ -653,52 +653,52 @@ class MainFrame(wx.Frame):
         track1.name = '合并%05d' % auto_id.get_id()
 
         for item2 in item2_list[-1::-1]:
-            self.g.track_edit.DeleteItem(item2)
-            org_track_list.append(self.g.edit_track_list.pop(item2))
-        self.g.track_edit.DeleteItem(item1)
-        self.g.edit_track_list.pop(item1)
+            g.track_edit.DeleteItem(item2)
+            org_track_list.append(g.edit_track_list.pop(item2))
+        g.track_edit.DeleteItem(item1)
+        g.edit_track_list.pop(item1)
 
-        self.g.track_edit.InsertStringItem(len(self.g.edit_track_list), track1.name)
-        self.g.edit_track_list.append(track1)
+        g.track_edit.InsertStringItem(len(g.edit_track_list), track1.name)
+        g.edit_track_list.append(track1)
         track1.is_checked = False
-        self.g.track_edit.set_selected_track_line(track1)
+        g.track_edit.set_selected_track_line(track1)
 
         undo_action = {}
         undo_action['action'] = 'merge'
         undo_action['org_track_list'] = org_track_list
         undo_action['new_track'] = track1
-        self.g.undo_list = [undo_action]
+        g.undo_list = [undo_action]
 
         self.enable_undo()
         do_log('已将%d个轨迹合并为一个...' % len(org_track_list))
         self.repaint(canvas=const.REDRAW_TRACK)
 
     def on_undo(self, event):
-        if not self.g.undo_list:
+        if not g.undo_list:
             self.enable_undo(False)
             return
 
-        undo_action = self.g.undo_list.pop()
+        undo_action = g.undo_list.pop()
         if undo_action['action'] == 'tree_del_track':
             track_line = undo_action['track']
-            parent = self.g.get_parent_folder(track_line)
-            self.g.add_data(parent, track_line)
+            parent = g.get_parent_folder(track_line)
+            g.add_data(parent, track_line)
             self.enable_undo(False)
             self.repaint(const.REDRAW_TRACK)
             do_log('刚才删除的轨迹“%s”被恢复至文件夹“%s”' % (track_line.name, parent.name))
         elif undo_action['action'] == 'tree_del_folder':
             deleted = undo_action['deleted']
             for data in deleted:
-                parent = self.g.get_parent_folder(data)
-                self.g.add_data(parent, data, commit=False)
-            self.g.db_mgr.commit()
+                parent = g.get_parent_folder(data)
+                g.add_data(parent, data, commit=False)
+            g.db_mgr.commit()
             self.enable_undo(False)
             self.repaint(const.REDRAW_TRACK)
             do_log('刚才删除的文件夹“%s”被恢复')
         elif undo_action['action'] == 'edit_del_track':
             track_line = undo_action['track']
-            self.g.track_edit.InsertStringItem(len(self.g.edit_track_list), track_line.name)
-            self.g.edit_track_list.append(track_line)
+            g.track_edit.InsertStringItem(len(g.edit_track_list), track_line.name)
+            g.edit_track_list.append(track_line)
             self.enable_undo(False)
             self.repaint(const.REDRAW_TRACK)
             do_log('刚才删除的轨迹“%s”已恢复' % track_line.name)
@@ -706,7 +706,7 @@ class MainFrame(wx.Frame):
             track_line = undo_action['track']
             start_idx = undo_action['start']
             track_line.track_points[start_idx:start_idx] = undo_action['del_seg']
-            self.g.track_edit.selected_track_line = track_line
+            g.track_edit.selected_track_line = track_line
             track_line.sel_start_idx = start_idx
             track_line.sel_end_idx = undo_action['end']
             track_line.compute_track_line_args()
@@ -718,7 +718,7 @@ class MainFrame(wx.Frame):
             point = undo_action['point']
             index = undo_action['index']
             track_line.track_points[index:index] = [point]
-            self.g.track_edit.selected_track_line = track_line
+            g.track_edit.selected_track_line = track_line
             track_line.sel_start_idx = index
             track_line.sel_end_idx = index
             track_line.selected_point = point
@@ -730,32 +730,32 @@ class MainFrame(wx.Frame):
             track_org = undo_action['track_org']
             track1 = undo_action['track1']
             track2 = undo_action['track2']
-            track_list = self.g.edit_track_list
-            self.g.track_edit.DeleteItem(track_list.index(track2))
-            self.g.track_edit.DeleteItem(track_list.index(track1))
+            track_list = g.edit_track_list
+            g.track_edit.DeleteItem(track_list.index(track2))
+            g.track_edit.DeleteItem(track_list.index(track1))
             track_list.pop(track_list.index(track2))
             track_list.pop(track_list.index(track1))
-            self.g.track_edit.InsertStringItem(len(track_list), track_org.name)
+            g.track_edit.InsertStringItem(len(track_list), track_org.name)
             track_list.append(track_org)
-            self.g.track_edit.set_selected_track_line(track_org)
+            g.track_edit.set_selected_track_line(track_org)
             self.enable_undo(False)
             self.repaint(const.REDRAW_TRACK)
             do_log('刚才被分割的轨迹已重新合并...')
         elif undo_action['action'] == 'merge':
             org_track_list = undo_action['org_track_list']
             new_track = undo_action['new_track']
-            track_list = self.g.edit_track_list
-            self.g.track_edit.DeleteItem(track_list.index(new_track))
+            track_list = g.edit_track_list
+            g.track_edit.DeleteItem(track_list.index(new_track))
             track_list.pop(track_list.index(new_track))
             
             for track_line in org_track_list:
-                self.g.track_edit.InsertStringItem(len(track_list), track_line.name)
+                g.track_edit.InsertStringItem(len(track_list), track_line.name)
                 track_list.append(track_line)
                 track_line.is_checked = False
                 for point in track_line.track_points:
                     point.track_line = track_line
             
-            self.g.track_edit.set_selected_track_line(None)
+            g.track_edit.set_selected_track_line(None)
             self.enable_undo(False)
             self.repaint(const.REDRAW_TRACK)
             do_log('刚才被合并的轨迹已重新分割为多个...')
@@ -764,18 +764,18 @@ class MainFrame(wx.Frame):
             track_line.track_points.reverse()
             track_line.has_timestamp = undo_action['has_timestamp']
             track_line.compute_track_line_args()
-            self.g.track_edit.set_selected_track_line(track_line)
+            g.track_edit.set_selected_track_line(track_line)
             self.enable_undo(False)
             self.repaint(canvas=const.REDRAW_TRACK)
             do_log('刚才翻转的轨迹已恢复至原来方向...')
         elif undo_action['action'] == 'del_all_wpts':
             redo_dir = '被删路点恢复%05d' % auto_id.get_id()
-            wpt_folder = self.g.track_tree.create_child_folder(self.g.data_root, redo_dir)
-            for wpt in self.g.wpt_list_deleted:
+            wpt_folder = g.track_tree.create_child_folder(g.data_root, redo_dir)
+            for wpt in g.wpt_list_deleted:
                 wpt.parent = wpt_folder.uuid
-                self.g.add_data(wpt_folder, wpt, commit=False)
-            self.g.db_mgr.commit()
-            self.g.wpt_list_deleted = []
+                g.add_data(wpt_folder, wpt, commit=False)
+            g.db_mgr.commit()
+            g.wpt_list_deleted = []
             self.repaint(canvas=const.REDRAW_COPY)
             do_log('刚才被删除的路点统一被恢复至<%s>文件夹...' % redo_dir)
 
@@ -785,19 +785,19 @@ class MainFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             name = dlg.name.GetValue()
             if name:
-                way_points = search.find_pos_from_name(name, self.g.search_api)
+                way_points = search.find_pos_from_name(name, g.search_api)
                 if len(way_points) > 0:
                     folder_name = '地点搜索结果：%s' % name
-                    new_folder = self.g.track_tree.create_child_folder(self.g.data_root, folder_name)
+                    new_folder = g.track_tree.create_child_folder(g.data_root, folder_name)
                     first_wpt = None
                     for point in way_points:
                         wpt = WayPoint(point[0], point[1], point[2], parent=new_folder.uuid,
-                                       bmp_index=self.g.default_wpt_bmp_index)
-                        self.g.add_data(new_folder, wpt)
+                                       bmp_index=g.default_wpt_bmp_index)
+                        g.add_data(new_folder, wpt)
                         if not first_wpt:
                             first_wpt = wpt
-                    self.g.track_tree.SelectItem(first_wpt.tree_node)
-                    self.g.map_canvas.zoom_to_lon_lat(15, first_wpt.lon, first_wpt.lat)
+                    g.track_tree.SelectItem(first_wpt.tree_node)
+                    g.map_canvas.zoom_to_lon_lat(15, first_wpt.lon, first_wpt.lat)
                     self.repaint(canvas=const.REDRAW_MAP)
                 else:
                     do_log('地名搜索失败...')
@@ -806,7 +806,7 @@ class MainFrame(wx.Frame):
         dlg.Destroy()
 
     def on_search_route(self, event):
-        dlg = RouteSearchDlg(self.g)
+        dlg = RouteSearchDlg()
         dlg.CentreOnParent()
         if dlg.ShowModal() == wx.ID_OK:
             wpt_start = None
@@ -815,54 +815,54 @@ class MainFrame(wx.Frame):
             if start_idx < 0:
                 start_name = dlg.start.GetValue()
                 if start_name:
-                    way_points = search.find_pos_from_name(start_name, self.g.search_api)
+                    way_points = search.find_pos_from_name(start_name, g.search_api)
                     if way_points:
                         wpt_start = WayPoint(way_points[0][0], way_points[0][1], way_points[0][2], 
-                                             bmp_index=self.g.default_wpt_bmp_index)
+                                             bmp_index=g.default_wpt_bmp_index)
                     else:
                         wpt_start = None
             else:
-                wpt_start = self.g.wpt_list[start_idx]
+                wpt_start = g.wpt_list[start_idx]
                 
             end_idx = dlg.end.GetCurrentSelection()
             if end_idx < 0:
                 end_name = dlg.end.GetValue()
                 if end_name:
-                    way_points = search.find_pos_from_name(end_name, self.g.search_api)
+                    way_points = search.find_pos_from_name(end_name, g.search_api)
                     if way_points:
                         wpt_end = WayPoint(way_points[0][0], way_points[0][1], way_points[0][2], 
-                                           bmp_index=self.g.default_wpt_bmp_index)
+                                           bmp_index=g.default_wpt_bmp_index)
                     else:
                         wpt_end = None
             else:
-                wpt_end = self.g.wpt_list[end_idx]
+                wpt_end = g.wpt_list[end_idx]
             
             if wpt_start and wpt_end:
-                routes = search.find_drive_route((wpt_start.lon, wpt_start.lat), (wpt_end.lon, wpt_end.lat), self.g.search_api)
+                routes = search.find_drive_route((wpt_start.lon, wpt_start.lat), (wpt_end.lon, wpt_end.lat), g.search_api)
                 if len(routes) > 0:
                     folder_name = '路径搜索结果：%s --> %s' % (wpt_start.name, wpt_end.name)
-                    new_folder = self.g.track_tree.create_child_folder(self.g.data_root, folder_name)
+                    new_folder = g.track_tree.create_child_folder(g.data_root, folder_name)
                     first_track = None
                     for route in routes:
                         track_line = TrackLine(new_folder.uuid, name='行车路径%05d' % auto_id.get_id())
                         track_line.load_from_points(route)
-                        self.g.add_data(new_folder, track_line, commit=False)
+                        g.add_data(new_folder, track_line, commit=False)
                         if not first_track:
                             first_track = track_line
                         
                     if not wpt_start.parent:
                         wpt_start.parent = new_folder.uuid
-                        self.g.add_data(new_folder, wpt_start, commit=False)
+                        g.add_data(new_folder, wpt_start, commit=False)
                         
                     if not wpt_end.parent:
                         wpt_end.parent = new_folder.uuid
-                        self.g.add_data(new_folder, wpt_end, commit=False)
+                        g.add_data(new_folder, wpt_end, commit=False)
 
-                    self.g.db_mgr.commit()
+                    g.db_mgr.commit()
                         
-                    self.g.track_tree.selected_track_line = first_track
-                    self.g.track_tree.SelectItem(first_track.tree_node)
-                    self.g.map_canvas.zoom_to_track_line(first_track)
+                    g.track_tree.selected_track_line = first_track
+                    g.track_tree.SelectItem(first_track.tree_node)
+                    g.map_canvas.zoom_to_track_line(first_track)
                     do_log('找到%d条行车路线' % len(routes))
                 else:
                     do_log('未找到合适的行车路线...')
@@ -871,22 +871,22 @@ class MainFrame(wx.Frame):
         dlg.Destroy()
 
     def on_search_api(self, event):
-        dlg = SearchApiDlg(self.g)
+        dlg = SearchApiDlg()
         dlg.CentreOnParent()
         if dlg.ShowModal() == wx.ID_OK:
-            self.g.search_api = dlg.search_api.GetSelection()
+            g.search_api = dlg.search_api.GetSelection()
         dlg.Destroy()
         
     def on_hide_wpts(self, event):
-        for wpt in self.g.wpt_list:
+        for wpt in g.wpt_list:
             wpt.is_visible = False
-            self.g.db_mgr.update_visible(wpt, commit=False)
-            self.g.track_tree.SetItemBold(wpt.tree_node, False)
-        self.g.db_mgr.commit()
+            g.db_mgr.update_visible(wpt, commit=False)
+            g.track_tree.SetItemBold(wpt.tree_node, False)
+        g.db_mgr.commit()
         self.repaint(const.REDRAW_COPY)
 
     def on_default_pin(self, event):
-        dlg = DefaultPinDlg(self.g)
+        dlg = DefaultPinDlg()
         dlg.CentreOnParent()
         dlg.ShowModal()
         dlg.Destroy()
@@ -901,12 +901,12 @@ class MainFrame(wx.Frame):
         if ret != wx.ID_YES:
             return
         
-        self.g.empty_wpt_list()
-        self.g.map_canvas.repaint(const.REDRAW_COPY)
+        g.empty_wpt_list()
+        g.map_canvas.repaint(const.REDRAW_COPY)
         
         undo_action = {}
         undo_action['action'] = 'del_all_wpts'
-        self.g.undo_list = [undo_action]
+        g.undo_list = [undo_action]
         self.enable_undo()
         do_log('已删除所有路点数据...')
 
@@ -924,19 +924,19 @@ class MainFrame(wx.Frame):
                 if need_jiupian:
                     lon, lat = jiupian.gcj02_to_wgs84(lon, lat)
                 wpt = WayPoint('瓦片-x%d-y%d-z%d' % (tile_x, tile_y, zoom), lon, lat,
-                               parent=self.g.data_root.uuid, bmp_index=self.g.default_wpt_bmp_index)
-                self.g.add_data(self.g.data_root, wpt)
-                self.g.track_tree.SelectItem(wpt.tree_node)
+                               parent=g.data_root.uuid, bmp_index=g.default_wpt_bmp_index)
+                g.add_data(g.data_root, wpt)
+                g.track_tree.SelectItem(wpt.tree_node)
                 self.repaint(const.REDRAW_COPY)
             else:
                 do_log('瓦片x，y，z坐标都必须有值...')
         dlg.Destroy()
 
     def on_srtm_src(self, event):
-        dlg = SrtmSrcDlg(self.g)
+        dlg = SrtmSrcDlg()
         dlg.CentreOnParent()
         if dlg.ShowModal() == wx.ID_OK:
-            self.g.srtm_url_index = dlg.srtm_src.GetSelection()
+            g.srtm_url_index = dlg.srtm_src.GetSelection()
         dlg.Destroy()
 
     def on_photo_add(self, event):
@@ -951,9 +951,9 @@ class MainFrame(wx.Frame):
             paths = dlg.GetPaths()
             photo = Photo(paths[0])
             if photo.bmp:
-                self.g.photo_list.append(photo)
-                self.g.db_mgr.add_photo(photo)
-                self.g.map_canvas.zoom_to_lon_lat(15, photo.lon, photo.lat)
+                g.photo_list.append(photo)
+                g.db_mgr.add_photo(photo)
+                g.map_canvas.zoom_to_lon_lat(15, photo.lon, photo.lat)
             else:
                 do_log('照片文件无GPS信息，无法放置到地图...')
         dlg.Destroy()
@@ -968,14 +968,14 @@ class MainFrame(wx.Frame):
         if ret != wx.ID_YES:
             return
 
-        for photo in self.g.photo_list:
-            self.g.db_mgr.del_photo(photo, commit=False)
-        self.g.db_mgr.commit()
-        self.g.photo_list = []
-        self.g.map_canvas.repaint(const.REDRAW_COPY)
+        for photo in g.photo_list:
+            g.db_mgr.del_photo(photo, commit=False)
+        g.db_mgr.commit()
+        g.photo_list = []
+        g.map_canvas.repaint(const.REDRAW_COPY)
 
     def show_track_details(self, track_line=None):
-        self.g.track_details.Clear()
+        g.track_details.Clear()
         if track_line is None:
             return  # 当前无选中轨迹则仅做清空工作并返回
 
@@ -993,7 +993,7 @@ class MainFrame(wx.Frame):
         track_line_details = name + time_begin + time_end + time_duration + distance + distance_horizon \
                              + climb + descent + alt_range + point_num + '\n'
 
-        if track_line is self.g.track_edit.selected_track_line:
+        if track_line is g.track_edit.selected_track_line:
             from_to = '%d-%d\n' % (track_line.sel_start_idx, track_line.sel_end_idx)
             time_begin = '起始时间：%s\n' % track_line.sel_time_begin_str if track_line.has_timestamp else ''
             time_end = '结束时间：%s\n' % track_line.sel_time_end_str if track_line.has_timestamp else ''
@@ -1009,7 +1009,7 @@ class MainFrame(wx.Frame):
         else:
             sel_segment_details = ''
             
-        if track_line is self.g.track_edit.selected_track_line and track_line.selected_point:
+        if track_line is g.track_edit.selected_track_line and track_line.selected_point:
             point = '%d\n' % track_line.track_points.index(track_line.selected_point)
             timestamp = '时间：%s\n' % track_line.sel_point_time_str if track_line.has_timestamp else ''
             lon = '东经：%.08f\n' % track_line.selected_point.lon
@@ -1019,20 +1019,20 @@ class MainFrame(wx.Frame):
         else:
             sel_point_details = ''
 
-        self.g.track_details.WriteText(track_line_details + sel_segment_details + sel_point_details)
+        g.track_details.WriteText(track_line_details + sel_segment_details + sel_point_details)
         
     def repaint(self, canvas=const.REDRAW_MAP):
         if canvas != const.REDRAW_NONE:
-            self.g.map_canvas.repaint(mode=canvas)
+            g.map_canvas.repaint(mode=canvas)
 
-        track_line = self.g.track_edit.selected_track_line if self.g.in_editing else self.g.track_tree.selected_track_line
+        track_line = g.track_edit.selected_track_line if g.in_editing else g.track_tree.selected_track_line
         
         if track_line:
             track_line.compute_time_args_after_restore()
-            if self.g.in_editing:
+            if g.in_editing:
                 track_line.compute_selected_segment_args()
         self.show_track_details(track_line)
-        self.g.track_chart.draw_alt_chart(track_line)
+        g.track_chart.draw_alt_chart(track_line)
 
     def on_about(self, event):
         about_info = wx.adv.AboutDialogInfo()

@@ -8,15 +8,15 @@ import requests
 import wx
 
 from app.globals import const
+from app.globals.global_data import g
 from app.service import jiupian
 from app.service import transform
 
 
 class MapDownloadDialog(wx.Dialog):
-    def __init__(self, g, corner1_fpx, corner1_fpy, corner2_fpx, corner2_fpy):
+    def __init__(self, corner1_fpx, corner1_fpy, corner2_fpx, corner2_fpy):
         wx.Dialog.__init__(self, None, -1, '下载离线地图', size=(880, 720))
         self.EnableCloseButton(False)
-        self.g = g
         self._corner1_fpx_wgs84 = corner1_fpx
         self._corner1_fpy_wgs84 = corner1_fpy
         self._corner2_fpx_wgs84 = corner2_fpx
@@ -28,16 +28,16 @@ class MapDownloadDialog(wx.Dialog):
         self.compute_coordinate(original=True)
 
         choices = []
-        for source in self.g.map_list_main:
+        for source in g.map_list_main:
             choices.append(source.name)
-        for source in self.g.map_list_trans:
+        for source in g.map_list_trans:
             choices.append(source.name)
 
         self._ctl_map_src = wx.RadioBox(parent=self, id=-1, label='选择地图源', pos=(35, 35), size=(220, 520), choices=choices, style=wx.RA_VERTICAL)
-        for i in range(len(self.g.map_list_main)):
-            if self.g.map_list_main[i].is_visible:
+        for i in range(len(g.map_list_main)):
+            if g.map_list_main[i].is_visible:
                 self._ctl_map_src.SetSelection(i)
-                self.map_src = self.g.map_list_main[i]
+                self.map_src = g.map_list_main[i]
 
         wx.StaticText(self, -1, '地图缩放级别：', (50, 575))
         self._ctl_zoom = wx.SpinCtrl(self, -1, '', pos=(160, 573), size=(80, 28))
@@ -143,10 +143,10 @@ class MapDownloadDialog(wx.Dialog):
         self.compute_coordinate(original=False)
         
         map_src_index = self._ctl_map_src.GetSelection()
-        if map_src_index < len(self.g.map_list_main):
-            self._map_src = self.g.map_list_main[map_src_index]
+        if map_src_index < len(g.map_list_main):
+            self._map_src = g.map_list_main[map_src_index]
         else:
-            self._map_src = self.g.map_list_trans[map_src_index - len(self.g.map_list_main)]
+            self._map_src = g.map_list_trans[map_src_index - len(g.map_list_main)]
         
         self._zoom = self._ctl_zoom.GetValue()
         if self._zoom > self._map_src.zoom_max:

@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+from app.globals.global_data import g
 from app.model.data_folder import DataFolder
 from app.model.track_line import TrackLine
 from app.model.way_point import WayPoint
 
 
-def write_kml(data, g):
+def write_kml(data):
     out_lines = []
 
     out_lines.append('<?xml version="1.0" encoding="UTF-8"?>\n')
     out_lines.append('<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">\n')
 
     if isinstance(data, DataFolder):
-        write_document(data, g, out_lines)
+        write_document(data, out_lines)
     elif isinstance(data, TrackLine):
         write_track_line(data, out_lines)
     elif isinstance(data, WayPoint):
@@ -73,7 +74,7 @@ def write_way_point(wpt, out_lines):
     out_lines.append('    </Placemark>\n')
 
 
-def write_document(doc, g, out_lines):
+def write_document(doc, out_lines):
     children_list = []
     for lst in [g.folder_list, g.track_list, g.wpt_list]:
         for child in lst:
@@ -86,7 +87,7 @@ def write_document(doc, g, out_lines):
 
     for child in children_list:
         if isinstance(child, DataFolder):
-            write_document(child, g, out_lines)
+            write_document(child, out_lines)
         elif isinstance(child, TrackLine):
             write_track_line(child, out_lines)
         elif isinstance(child, WayPoint):

@@ -4,12 +4,12 @@ import wx
 from wx.lib import plot
 
 from app.globals import const
+from app.globals.global_data import g
 
 
 class TrackChart(plot.PlotCanvas):
-    def __init__(self, parent, g):
+    def __init__(self, parent):
         plot.PlotCanvas.__init__(self, parent=parent, style=wx.BORDER_DOUBLE | wx.TE_PROCESS_TAB)
-        self.g = g
         self.canvas.Bind(wx.EVT_LEFT_DOWN, self.on_left_down, self.canvas)
 
     def draw_alt_chart(self, track_line=None):
@@ -27,7 +27,7 @@ class TrackChart(plot.PlotCanvas):
         for i in range(0, track_line.point_num):
             line_value = int(track_line.track_points[i].alt)
             line_ends = [(i, alt_min), (i, line_value)]
-            if not self.g.in_editing:
+            if not g.in_editing:
                 color = 'blue'
             elif track_line.sel_start_idx <= i <= track_line.sel_end_idx:
                 color = 'green'
@@ -38,7 +38,7 @@ class TrackChart(plot.PlotCanvas):
             line = plot.PolyLine(line_ends, colour=color)
             line_list.append(line)
 
-        if self.g.in_editing and track_line.selected_point:
+        if g.in_editing and track_line.selected_point:
             i = track_line.track_points.index(track_line.selected_point)
             line_ends = [(i, alt_min), (i, alt_max)]
             color = 'red'
@@ -51,19 +51,19 @@ class TrackChart(plot.PlotCanvas):
     def on_left_down(self, event):
         self.canvas.SetFocus()
         self.canvas.SetFocusFromKbd()
-        if self.g.in_editing and self.g.track_edit.selected_track_line:
+        if g.in_editing and g.track_edit.selected_track_line:
             x, y = self.GetXY(event)
             index = int(x)
-            track_line = self.g.track_edit.selected_track_line
+            track_line = g.track_edit.selected_track_line
             if 0 <= index <= len(track_line.track_points):
                 track_line.selected_point = track_line.track_points[index]
-                self.g.frame.repaint(canvas=const.REDRAW_COPY)
-        self.g.logger.SetFocus()
-        self.g.logger.Bind(wx.EVT_KEY_DOWN, self.on_key_down, self.g.logger)
+                g.frame.repaint(canvas=const.REDRAW_COPY)
+        g.logger.SetFocus()
+        g.logger.Bind(wx.EVT_KEY_DOWN, self.on_key_down, g.logger)
 
     def on_key_down(self, event):
-        if self.g.in_editing and self.g.track_edit.selected_track_line:
-            track_line = self.g.track_edit.selected_track_line
+        if g.in_editing and g.track_edit.selected_track_line:
+            track_line = g.track_edit.selected_track_line
             if track_line.selected_point:
                 index = track_line.track_points.index(track_line.selected_point)
                 if event.GetKeyCode() == wx.WXK_LEFT and index > 0:
@@ -73,4 +73,4 @@ class TrackChart(plot.PlotCanvas):
                 else:
                     return
                 track_line.selected_point = track_line.track_points[index]
-                self.g.frame.repaint(canvas=const.REDRAW_COPY)
+                g.frame.repaint(canvas=const.REDRAW_COPY)

@@ -39,7 +39,7 @@ class SrtmManager:
         self.g = g
         self._srtm_cache_usgs = {}
         self._srtm_cache_cagar = {}
-        self._srtm_cache_path = os.path.join(g.data_path, 'srtmcache')
+        self._srtm_cache_path = os.path.join(self.g.data_path, 'srtmcache')
         if not os.path.exists(self._srtm_cache_path):
             os.mkdir(self._srtm_cache_path)
             
