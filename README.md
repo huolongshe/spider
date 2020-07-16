@@ -54,31 +54,38 @@
 
 ### 安装运行:
 
-- **运行环境**
+- 运行环境
     
-        Windows
+    Windows
+        
+- 开发
 
-- **使用源码安装**
+    1. 安装Python 3.5以上版本。
 
-    1. 安装Python 3.6。
+    2. Clone或下载源代码。
+    
+            git clone https://github.com/huolongshe/spider
 
-    2. 下载wxPython4依赖包并安装。从 https://pypi.python.org/pypi/wxPython/4.0.1 选择相应的wxPython4依赖包下载，然后执行：
+    3. 安装依赖包。进入spider.py所在文件夹，在命令行终端中执行：
 
-            pip install wheel
-            pip install wxPython-4.0.1-cp36-cp36m-win_amd64.whl （替换为相应的下载版本）
-
-    3. Clone或下载源代码。
-
-    4. 进入spider.py所在文件夹，在命令行终端中执行：
+            pip-install-reqs.bat
+            
+    4. 运行程序。进入spider.py所在文件夹，在命令行终端中执行：
 
             python spider.py
+            
+    5. 调试程序。用PyCharm打开spider程序目录，在IDE中调试运行程序。
+    
+    6. 打包可执行文件
+    
+            pyinstaller -F -w spider.py
+            
+    打包后的文件位于 dist 目录之下： dist/spider.exe
 
-- **使用可执行文件安装**
+- 直接下载运行可执行文件
 
     1. 进入release页面：https://github.com/huolongshe/spider/releases ，找到相应版本的spider.exe可执行文件并下载。
 
     2. 在电脑中新建一个空文件夹，将spider.exe文件拷贝至该文件夹。
 
     3. 鼠标双击该文件夹中的spider.exe，打开并运行轨迹编辑器。
-
-

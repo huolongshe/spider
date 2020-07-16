@@ -84,7 +84,7 @@ class GlobalData:
         if os.path.isfile(self.cfg_path):
             try:
                 with open(self.cfg_path, 'r') as fn:
-                    cfg = yaml.load(fn)
+                    cfg = yaml.load(fn, Loader=yaml.FullLoader)
                 if cfg and isinstance(cfg, dict) \
                         and 'path' in cfg \
                         and 'bmp_index' in cfg \
