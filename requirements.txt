@@ -1,0 +1,6 @@
+wxpython==4.0.1
+pyyaml
+requests
+numpy
+pillow
+pyinstaller
