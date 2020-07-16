@@ -6,8 +6,7 @@ import yaml
 from app.globals import const
 from app.resource import map_cfg
 from app.resource import app_icons
-# from app.resource import pin_icons  # 必须存在，在eval的字符串中被引用，所以是灰的
-from app.resource import pin_icons
+from app.resource import pin_icons  # 必须存在，在eval的字符串中被引用，所以是灰的
 from app.model.map_source import MapSource
 from app.model.data_folder import DataFolder
 from app.model.track_line import TrackLine
@@ -18,24 +17,22 @@ from app.service.db_mgr import DbManager
 
 
 class GlobalData:
-    def __init__(self, frame):
+    def __init__(self):
         self.app_path = os.getcwd()  # 本程序启动时所在目录
         self.data_path = os.path.join(self.app_path, '.cache')  # 本程序数据目录，配置文件、数据缓存文件等保存在此目录
         if not os.path.exists(self.data_path):
             os.mkdir(self.data_path)
         self.cfg_path = os.path.join(self.data_path, const.CFG_FILE_NAME)
-        
+
+        self.tile_transparent_bmp = None
+        self.tile_blank_bmp = None
+        self.pin_bmps = None
+
         # 单实例缓存区
-        self.db_mgr = DbManager(self)
-        self.tile_mgr = TileManager(self)
-        self.srtm_mgr = SrtmManager(self)
+        self.db_mgr = None
+        self.tile_mgr = None
+        self.srtm_mgr = None
         self.undo_list = []
-        
-        self.tile_transparent_bmp = app_icons.tile_transparent.GetBitmap()
-        self.tile_blank_bmp = app_icons.tile_blank.GetBitmap()
-        self.pin_bmps = [None] * 100
-        for i in range(100):
-            self.pin_bmps[i] = eval('pin_icons.pin%02d' % i).GetBitmap()
 
         # 配置数据
         self.search_api = const.SEARCH_API_GOOGLE
@@ -58,14 +55,14 @@ class GlobalData:
         self.wpt_list = []
         self.wpt_list_deleted = []
         self.photo_list = []
-        
+
         self.edit_track_list = []
         self.map_list_main = []
         self.map_list_trans = []
         self.init_map_list()
 
         # views
-        self.frame = frame
+        self.frame = None
         self.map_canvas = None
         self.track_tree = None
         self.track_edit = None
@@ -78,6 +75,18 @@ class GlobalData:
         self.hide_map = False
         self.full_screen = False
         self.downloading_map = False  # 进入离线地图下载状态，点击左键开始拖拽并选择下载区域，松开后弹出下载对话框
+
+    def load_global_data(self, frame):
+        self.tile_transparent_bmp = app_icons.tile_transparent.GetBitmap()
+        self.tile_blank_bmp = app_icons.tile_blank.GetBitmap()
+        self.pin_bmps = [None] * 100
+        for i in range(100):
+            self.pin_bmps[i] = eval('pin_icons.pin%02d' % i).GetBitmap()
+
+        self.db_mgr = DbManager(self.data_path)
+        self.tile_mgr = TileManager(self.data_path, self.tile_transparent_bmp)
+        self.srtm_mgr = SrtmManager(self)
+        self.frame = frame
 
     def read_cfg(self, path):
         self.init_cfg = None
@@ -246,4 +255,6 @@ class GlobalData:
             if child.parent == folder.uuid:
                 return folder
         return None
-    
+
+
+g = GlobalData()

@@ -7,12 +7,12 @@ import wx.adv
 import wx.lib.masked
 
 from app.globals import const
+from app.globals.global_data import g
 
 
 class PointEditDlg(wx.Dialog):
-    def __init__(self, g, point):
+    def __init__(self, point):
         wx.Dialog.__init__(self, None, -1, '轨迹点数据', size=(560, 400))
-        self.g = g
         self._point = point
         self._track = point.track_line
         self._point_idx = self._track.track_points.index(self._point)
@@ -53,7 +53,7 @@ class PointEditDlg(wx.Dialog):
         
         ok_btn = wx.Button(self, id=-1, label='确定', pos=(400, 300))
         self.Bind(wx.EVT_BUTTON, self.on_ok, ok_btn)
-        self.g.frame.repaint(canvas=const.REDRAW_COPY)
+        g.frame.repaint(canvas=const.REDRAW_COPY)
     
     def on_set_alt_btn(self, event):
         point_pre = self._track.track_points[self._point_idx - 1] if self._point_idx > 0 else None
@@ -96,7 +96,7 @@ class PointEditDlg(wx.Dialog):
             self.time.SetValue(time_str)
         
         self._track.selected_point = self._point
-        self.g.frame.repaint(canvas=const.REDRAW_COPY)
+        g.frame.repaint(canvas=const.REDRAW_COPY)
     
     def on_next(self, event):
         self.save()
@@ -123,7 +123,7 @@ class PointEditDlg(wx.Dialog):
             self.date.SetValue(date)
             self.time.SetValue(time_str)
         self._track.selected_point = self._point
-        self.g.frame.repaint(canvas=const.REDRAW_COPY)
+        g.frame.repaint(canvas=const.REDRAW_COPY)
         
     def on_ok(self, event):
         self.save()

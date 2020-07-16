@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import wx
+from app.globals.global_data import g
 
 
 class SearchApiDlg(wx.Dialog):
-    def __init__(self, g):
+    def __init__(self):
         wx.Dialog.__init__(self, None, -1, '', size=(480, 250))
 
         choices = ['谷歌',

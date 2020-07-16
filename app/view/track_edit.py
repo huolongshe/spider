@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import wx
 
+from app.globals.global_data import g
 from app.dialog.point_edit_dlg import PointEditDlg
 from app.dialog.srtm_track_dlg import SrtmTrackDialog
 from app.globals import const
@@ -10,11 +11,10 @@ from app.service.logger import do_log
 
 
 class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
-    def __init__(self, parent, g):
+    def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent=parent, style=wx.LC_REPORT | wx.LC_EDIT_LABELS)
         CheckListCtrlMixin.__init__(self)
-        self.g = g
-        self._track_list = self.g.edit_track_list
+        self._track_list = g.edit_track_list
         self.selected_track_line = None
         
         self._selected_index = 0
@@ -42,7 +42,7 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
             self._track_list[index].is_checked = False
 
         # 重画轨迹和chart以改变颜色
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def add_track_line(self, track_line):
         self._track_list.append(track_line)
@@ -67,7 +67,7 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
         if 0 <= index <= len(self._track_list) - 1:
             track_line = self._track_list[index]
             self.set_selected_track_line(track_line)
-            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+            g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def on_motion(self, event):
         if event.Dragging() and event.LeftIsDown():
@@ -107,7 +107,7 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
             if 0 <= index <= len(self._track_list) - 1:
                 track_line = self._track_list[index]
                 self.set_selected_track_line(track_line)
-                self.g.map_canvas.zoom_to_track_line(track_line)
+                g.map_canvas.zoom_to_track_line(track_line)
 
     def on_right_down(self, event):
         index, flags = self.HitTest(event.GetPosition())
@@ -158,15 +158,15 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
     def on_move_to_user_data(self, event):
         index = self._popup_context[event.Id]
         track = self._track_list[index]
-        track.parent = self.g.data_root.uuid
-        self.g.add_data(self.g.data_root, track)
-        self.g.track_tree.CollapseAll()
-        self.g.track_tree.SelectItem(track.tree_node)
+        track.parent = g.data_root.uuid
+        g.add_data(g.data_root, track)
+        g.track_tree.CollapseAll()
+        g.track_tree.SelectItem(track.tree_node)
         self.DeleteItem(index)
         self._track_list.pop(index)
         if track is self.selected_track_line:
             self.selected_track_line = None
-            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+            g.frame.repaint(canvas=const.REDRAW_TRACK)
         
     def on_delete_track(self, event):
         dlg = wx.MessageDialog(self, '确认删除该轨迹？',
@@ -183,14 +183,14 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
         undo_action = {}
         undo_action['action'] = 'edit_del_track'
         undo_action['track'] = track_line
-        self.g.undo_list = []
-        self.g.undo_list.append(undo_action)
+        g.undo_list = []
+        g.undo_list.append(undo_action)
         if track_line is self.selected_track_line:
             self.selected_track_line = None
         self.DeleteItem(index)
         self._track_list.pop(index)
-        self.g.frame.enable_undo()
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.enable_undo()
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
         do_log('轨迹“%s”被删除...' % track_line.name)
 
     def on_reverse_track(self, event):
@@ -211,26 +211,26 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
         undo_action['action'] = 'reverse'
         undo_action['track'] = track_line
         undo_action['has_timestamp'] = track_line.has_timestamp
-        self.g.undo_list = []
-        self.g.undo_list.append(undo_action)
+        g.undo_list = []
+        g.undo_list.append(undo_action)
 
         track_line.track_points.reverse()
         track_line.has_timestamp = False
         track_line.compute_track_line_args()
         self.set_selected_track_line(track_line)
 
-        self.g.frame.enable_undo(False)
+        g.frame.enable_undo(False)
         do_log('轨迹“%s”方向已翻转...' % track_line.name)
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
         
     def on_edit_track_point(self, event):
         track_line = self._popup_context[event.Id]
         point = track_line.selected_point
-        dlg = PointEditDlg(g=self.g, point=point)
+        dlg = PointEditDlg(point=point)
         dlg.CentreOnParent()
         dlg.ShowModal()
         dlg.Destroy()
-        self.g.frame.repaint(canvas=const.REDRAW_NONE)
+        g.frame.repaint(canvas=const.REDRAW_NONE)
         
     def on_del_alt(self, event):
         index = self._popup_context[event.Id]
@@ -251,11 +251,11 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
         do_log('已删除本轨迹中所有轨迹点的高程数据...')
         track_line.compute_track_line_args()
         self.set_selected_track_line(track_line)
-        self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+        g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def on_download_alt(self, event):
         index = self._popup_context[event.Id]
-        dialog = SrtmTrackDialog(g=self.g, track_line=self._track_list[index])
+        dialog = SrtmTrackDialog(track_line=self._track_list[index])
         dialog.CentreOnParent()
         dialog.Show()
             
@@ -271,5 +271,5 @@ class TrackEdit(wx.ListCtrl, CheckListCtrlMixin):
         if item and name:
             self._track_list[item.Id].name = name
         if self.selected_track_line is self._track_list[item.Id]:
-            self.g.frame.repaint(canvas=const.REDRAW_NONE)
+            g.frame.repaint(canvas=const.REDRAW_NONE)
 

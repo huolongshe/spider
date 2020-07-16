@@ -5,6 +5,7 @@ import datetime
 import math
 import wx
 
+from app.globals.global_data import g
 from app.globals import const
 from app.resource import app_icons
 from app.dialog.map_download_dlg import MapDownloadDialog
@@ -39,9 +40,8 @@ from app.service.logger import do_log
 
 
 class MapCanvas(wx.Window):
-    def __init__(self, parent, g):
+    def __init__(self, parent):
         wx.Window.__init__(self, parent)
-        self.g = g
 
         self._self_drawing = False  # 自绘轨迹状态
         self._drawing_track = None  # 自绘轨迹时创建的轨迹对象
@@ -73,17 +73,17 @@ class MapCanvas(wx.Window):
         self._mdc2 = wx.MemoryDC(wx.Bitmap(screen_width, screen_height))  # MemoryDC
 
         # 恢复上次退出时的屏幕画面，否则显示中国地图
-        if self.g.init_cfg and 'pos' in self.g.init_cfg \
-                and 'fpx' in self.g.init_cfg['pos'] and 'fpy' in self.g.init_cfg['pos']:
-            self.set_centre_position(self.g.init_cfg['pos']['zoom'],
-                                 self.g.init_cfg['pos']['fpx'],
-                                 self.g.init_cfg['pos']['fpy'])
+        if g.init_cfg and 'pos' in g.init_cfg \
+                and 'fpx' in g.init_cfg['pos'] and 'fpy' in g.init_cfg['pos']:
+            self.set_centre_position(g.init_cfg['pos']['zoom'],
+                                 g.init_cfg['pos']['fpx'],
+                                 g.init_cfg['pos']['fpy'])
         else:
             self.zoom_to_fit_China()
 
     def get_max_zoom(self):
         max_zoom = const.MAX_ZOOM
-        for map_list in [self.g.map_list_main, self.g.map_list_trans]:
+        for map_list in [g.map_list_main, g.map_list_trans]:
             for map_source in map_list:
                 if map_source.is_visible and map_source.zoom_max < max_zoom:
                     max_zoom = map_source.zoom_max
@@ -91,7 +91,7 @@ class MapCanvas(wx.Window):
 
     def get_min_zoom(self):
         min_zoom = 1
-        for map_list in [self.g.map_list_main, self.g.map_list_trans]:
+        for map_list in [g.map_list_main, g.map_list_trans]:
             for map_source in map_list:
                 if map_source.is_visible and map_source.zoom_min > min_zoom:
                     min_zoom = map_source.zoom_min
@@ -292,16 +292,16 @@ class MapCanvas(wx.Window):
         self.redraw_selected_track_line()
         self.draw_way_points()
         self.draw_photos()
-        self.g.frame.show_status_info(zoom=self._zoom)
+        g.frame.show_status_info(zoom=self._zoom)
 
     def draw_way_points(self):
-        if self.g.in_editing:
+        if g.in_editing:
             return
         
         # 每次重绘wpt时必须初始化的参数
         self._pixel2wpt = {}  # 屏幕坐标点与wpt对象的对应关系，以便鼠标选择
         self._popup_context_wpt = {}  # 右键弹出窗口的上下文信息
-        for wpt in self.g.wpt_list:
+        for wpt in g.wpt_list:
             self.draw_way_point(wpt)
             
     def draw_way_point(self, wpt):
@@ -311,20 +311,20 @@ class MapCanvas(wx.Window):
             if self.pos_in_screen((wpt.spx, wpt.spy)):
                 spx = wpt.spx - 16
                 spy = wpt.spy - 32
-                self._dc.DrawBitmap(self.g.pin_bmps[wpt.bmp_index], spx, spy, True)
+                self._dc.DrawBitmap(g.pin_bmps[wpt.bmp_index], spx, spy, True)
                 for spy1 in range(spy, spy+32):
                     for spx1 in range(spx, spx + 32):
                         self._pixel2wpt[(spx1, spy1)] = wpt  # 添加坐标与wpt对应关系，以便鼠标选择
                 pass
 
     def draw_photos(self):
-        if self.g.in_editing:
+        if g.in_editing:
             return
 
         # 每次重绘wpt时必须初始化的参数
         self._pixel2photo = {}  # 屏幕坐标点与photo对象的对应关系，以便鼠标选择
         self._popup_context_photo = {}  # 右键弹出窗口的上下文信息
-        for photo in self.g.photo_list:
+        for photo in g.photo_list:
             self.draw_photo(photo)
 
     def draw_photo(self, photo):
@@ -340,12 +340,12 @@ class MapCanvas(wx.Window):
             pass
 
     def draw_map(self):
-        if self.g.hide_map:
+        if g.hide_map:
             self._mdc1.Clear()
             return
         
         self._drag_start_pos = None
-        for map_list in [self.g.map_list_main, self.g.map_list_trans]:
+        for map_list in [g.map_list_main, g.map_list_trans]:
             for map_source in map_list[-1::-1]:
                 if map_source.is_visible:
                     map_source.tiles_to_be_displayed = []
@@ -374,22 +374,22 @@ class MapCanvas(wx.Window):
                                     or tile_y >= (1 << self._zoom) \
                                     or tile_x < 0 \
                                     or tile_x >= (1 << self._zoom) * 3 // 2:
-                                self.draw_tile(self.g.tile_blank_bmp, spx, spy)
+                                self.draw_tile(g.tile_blank_bmp, spx, spy)
                                 continue
                             tile_x %= (1 << self._zoom)  # 针对右侧重复显示的一半地图
 
                             tile_id = map_source.make_tile_id(tile_x, tile_y, self._zoom)
                             tile_url = map_source.make_url(tile_x, tile_y, self._zoom)
-                            self.g.tile_mgr.get_tile_async(tile_url, tile_id, map_source.format)
+                            g.tile_mgr.get_tile_async(tile_url, tile_id, map_source.format)
                             map_source.tiles_to_be_displayed.append((tile_id, spx, spy))
-        for map_list in [self.g.map_list_main, self.g.map_list_trans]:
+        for map_list in [g.map_list_main, g.map_list_trans]:
             for map_source in map_list[-1::-1]:
                 if map_source.is_visible:
                     while map_source.tiles_to_be_displayed:
                         i = len(map_source.tiles_to_be_displayed)
                         for (tile_id, spx, spy) in map_source.tiles_to_be_displayed[-1::-1]:
                             i -= 1
-                            tile_bmp = self.g.tile_mgr.get_tile_cache(tile_id)
+                            tile_bmp = g.tile_mgr.get_tile_cache(tile_id)
                             if tile_bmp:
                                 map_source.tiles_to_be_displayed.pop(i)
                                 self.draw_tile(tile_bmp, spx, spy)
@@ -404,10 +404,10 @@ class MapCanvas(wx.Window):
         # 每次重绘轨迹时必须初始化的参数
         self._pixel2point = {}  # 屏幕坐标点与轨迹点对象的对应关系，以便鼠标选择
         self._popup_context = {}  # 右键弹出窗口的上下文信息
-        if self.g.in_editing:
+        if g.in_editing:
             self.draw_edit_tracks()
         else:
-            for track in self.g.track_list:
+            for track in g.track_list:
                 if track.is_visible and self.track_line_in_screen(track):
                     self.draw_track_line(self._mdc1, track)
             
@@ -424,7 +424,7 @@ class MapCanvas(wx.Window):
                 except KeyError:
                     self._pixel2point[(spx, spy)] = [point]
 
-        if track_line is self.g.track_tree.selected_track_line:
+        if track_line is g.track_tree.selected_track_line:
             return    # 当前选中轨迹会再最后重绘，所以暂时不画，但屏幕坐标计算以及坐标与轨迹点映射仍在这里进行
 
         color = wx.Colour(track_line.red, track_line.green, track_line.blue, track_line.alpha)
@@ -440,10 +440,10 @@ class MapCanvas(wx.Window):
             self.draw_track_end_points(dc, track_line)
 
     def draw_edit_tracks(self):
-        for track_line in self.g.edit_track_list:
+        for track_line in g.edit_track_list:
             if not track_line.is_checked:
                 self.draw_edit_track_line(self._mdc1, track_line)
-        for track_line in self.g.edit_track_list:
+        for track_line in g.edit_track_list:
             if track_line.is_checked:
                 self.draw_edit_track_line(self._mdc1, track_line)
 
@@ -459,7 +459,7 @@ class MapCanvas(wx.Window):
                         self._pixel2point[(spx, spy)] = []
                     self._pixel2point[(spx, spy)].append(point)  # 添加坐标与轨迹点对应关系，以便鼠标选择
 
-        if track_line is self.g.track_edit.selected_track_line:
+        if track_line is g.track_edit.selected_track_line:
             return  # 以后还要重画
 
         num = len(coords)
@@ -482,13 +482,13 @@ class MapCanvas(wx.Window):
             self.draw_track_end_points(dc, track_line)
 
     def redraw_selected_track_line(self):
-        if self.g.in_editing:
+        if g.in_editing:
             self.redraw_edit_selected_track_line()
         else:
             self.redraw_noedit_selected_track_line()
             
     def redraw_noedit_selected_track_line(self):
-        track_line = self.g.track_tree.selected_track_line
+        track_line = g.track_tree.selected_track_line
         if track_line is None or not track_line.is_visible or not self.track_line_in_screen(track_line):
             return
         coords = track_line.screen_coords
@@ -518,7 +518,7 @@ class MapCanvas(wx.Window):
             self.draw_track_end_points(self._dc, track_line)
 
     def redraw_edit_selected_track_line(self):
-        track_line = self.g.track_edit.selected_track_line
+        track_line = g.track_edit.selected_track_line
         if not track_line:
             return
 
@@ -639,7 +639,7 @@ class MapCanvas(wx.Window):
         pos = event.GetPosition()
         self._drag_start_pos = pos
 
-        if self.g.in_editing and self._self_drawing:  # 编辑状态下自绘轨迹，左键单击，创建一新的轨迹点
+        if g.in_editing and self._self_drawing:  # 编辑状态下自绘轨迹，左键单击，创建一新的轨迹点
             spx = self._drag_start_pos.x
             spy = self._drag_start_pos.y
             lon = self.get_lon_from_spx(spx)
@@ -649,35 +649,35 @@ class MapCanvas(wx.Window):
             track_point.spy = spy
             self._drawing_track.track_points.append(track_point)
             self.repaint(mode=const.REDRAW_TRACK)
-        elif self.g.in_editing and self._to_drag_point: # 编辑状态下拖拽轨迹点，左键单击，开始拖拽
+        elif g.in_editing and self._to_drag_point: # 编辑状态下拖拽轨迹点，左键单击，开始拖拽
             track_line = self.get_nearest_track_line(pos, manual_select=False)
             if track_line:
                 if track_line.selected_point is self._dragged_point:
                     self.SetCursor(wx.Cursor(wx.CURSOR_BULLSEYE))
                     self._dragging_point = True
-                    self.g.track_edit.set_selected_track_line(None)  # 去除选中以避免屏幕抖动
+                    g.track_edit.set_selected_track_line(None)  # 去除选中以避免屏幕抖动
                     self.repaint(mode=const.REDRAW_TRACK)  # 重绘一次轨迹，把去除选中的轨迹画上
 
     def on_left_up(self, event):
         self.SetCursor(wx.STANDARD_CURSOR)
         pos = event.GetPosition()
 
-        if self.g.in_editing:
+        if g.in_editing:
             if not self._self_drawing and not self._to_drag_point:
                 # 编辑状态，左键单击，首次选中该轨迹，之后选择轨迹段起始点和结束点
                 track_line = self.get_nearest_track_line(pos, manual_select=True)
                 if not track_line:
                     # 左键单击，未选中轨迹
-                    if self.g.track_edit.selected_track_line:
+                    if g.track_edit.selected_track_line:
                         # 已有选中轨迹段仍选中，但不再选中轨迹段，不再显示十字光标
-                        if self.g.track_edit.selected_track_line.selected_point:
-                            self.g.track_edit.selected_track_line.selected_point = None
-                            self.g.frame.repaint(canvas=const.REDRAW_COPY)
+                        if g.track_edit.selected_track_line.selected_point:
+                            g.track_edit.selected_track_line.selected_point = None
+                            g.frame.repaint(canvas=const.REDRAW_COPY)
                     return
                 # 左键单击，选中轨迹
-                if track_line is not self.g.track_edit.selected_track_line:
-                    self.g.track_edit.set_selected_track_line(track_line)
-                self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+                if track_line is not g.track_edit.selected_track_line:
+                    g.track_edit.set_selected_track_line(track_line)
+                g.frame.repaint(canvas=const.REDRAW_TRACK)
             elif self._to_drag_point and self._dragging_point:  # 编辑状态下拖拽轨迹点，左键松开，结束拖拽
                 spx = pos.x
                 spy = pos.y
@@ -692,8 +692,8 @@ class MapCanvas(wx.Window):
                 self._dragged_point.spx = spx
                 self._dragged_point.spy = spy
                 self._dragged_point.track_line.compute_track_line_args()
-                self.g.track_edit.set_selected_track_line(self._dragged_point.track_line)
-                self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+                g.track_edit.set_selected_track_line(self._dragged_point.track_line)
+                g.frame.repaint(canvas=const.REDRAW_TRACK)
                 self.SetCursor(wx.STANDARD_CURSOR)
                 self._to_drag_point = False
                 self._dragging_point = False
@@ -704,7 +704,7 @@ class MapCanvas(wx.Window):
                 self._dragging_point = False
                 self._dragged_point = None
         else:
-            if self.g.downloading_map:
+            if g.downloading_map:
                 # 非编辑状态，左键松开，弹出对话框下载离线地图
                 pos1 = self._drag_start_pos
                 pos2 = event.GetPosition()
@@ -739,13 +739,13 @@ class MapCanvas(wx.Window):
                     corner2_fpx = self.get_fpx_from_spx(corner2_spx)
                     corner2_fpy = self.get_fpy_from_spy(corner2_spy)
                     
-                    dialog = MapDownloadDialog(g=self.g, corner1_fpx=corner1_fpx, corner1_fpy=corner1_fpy,
+                    dialog = MapDownloadDialog(corner1_fpx=corner1_fpx, corner1_fpy=corner1_fpy,
                                                corner2_fpx=corner2_fpx, corner2_fpy=corner2_fpy)
                     dialog.CentreOnParent()
                     dialog.ShowModal()
                     dialog.Destroy()
                     
-                self.g.downloading_map = False
+                g.downloading_map = False
                 self.repaint(mode=const.REDRAW_COPY)
             else:
                 # 非编辑状态，左键单击
@@ -760,15 +760,15 @@ class MapCanvas(wx.Window):
                         track_line = self.get_nearest_track_line((pos.x, pos.y,), manual_select=True)
                         if not track_line:
                             return
-                        if track_line is not self.g.track_tree.selected_track_line:
-                            self.g.track_tree.selected_track_line = track_line
-                            self.g.track_tree.SelectItem(self.g.track_tree.selected_track_line.tree_node)
-                            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
+                        if track_line is not g.track_tree.selected_track_line:
+                            g.track_tree.selected_track_line = track_line
+                            g.track_tree.SelectItem(g.track_tree.selected_track_line.tree_node)
+                            g.frame.repaint(canvas=const.REDRAW_TRACK)
 
     def on_motion(self, event):
         pos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
-            if self.g.in_editing and self._to_drag_point and self._dragging_point:
+            if g.in_editing and self._to_drag_point and self._dragging_point:
                 # 编辑状态下拖拽轨迹点，正在拖拽， 画橡皮筋线条
                 self.repaint(mode=const.REDRAW_COPY)
                 track_line = self._dragged_point.track_line
@@ -783,7 +783,7 @@ class MapCanvas(wx.Window):
                     spy_next = track_line.track_points[index + 1].spy
                     self._dc.SetPen(wx.Pen(wx.Colour(255, 0, 0, 255), 1))
                     self._dc.DrawLine(spx_next, spy_next, pos.x, pos.y)
-            elif not self.g.in_editing and self.g.downloading_map:
+            elif not g.in_editing and g.downloading_map:
                 # 非编辑状态，下载离线地图，拖拽选择地图区域
                 pos1 = self._drag_start_pos
                 pos2 = event.GetPosition()
@@ -805,7 +805,7 @@ class MapCanvas(wx.Window):
             # 鼠标非拖拽状态下移动，显示光标位置经纬度坐标
             lon = self.get_lon_from_spx(pos.x)
             lat = self.get_lat_from_spy(pos.y)
-            self.g.frame.show_status_info(pos=(lon, lat))
+            g.frame.show_status_info(pos=(lon, lat))
 
             photo = self.get_photo_from_pos((pos.x, pos.y))
             if photo:
@@ -815,7 +815,7 @@ class MapCanvas(wx.Window):
                 if wpt:
                     self.display_spot_info(wpt)
 
-            if self.g.in_editing and self._self_drawing:  # 编辑状态下自绘轨迹，显示橡皮筋线条
+            if g.in_editing and self._self_drawing:  # 编辑状态下自绘轨迹，显示橡皮筋线条
                 if len(self._drawing_track.track_points) > 0:
                     self.repaint(const.REDRAW_COPY)
                     self.draw_edit_track_line(self._dc, self._drawing_track)
@@ -823,7 +823,7 @@ class MapCanvas(wx.Window):
                     spy_pre = self._drawing_track.track_points[-1].spy
                     self._dc.SetPen(wx.Pen(wx.Colour(255, 0, 0, 255), 1))
                     self._dc.DrawLine(spx_pre, spy_pre, pos.x, pos.y)
-            elif self.g.in_editing and self._to_drag_point: # 编辑状态下准备拖拽轨迹点，遇到可拖拽轨迹点时改变光标
+            elif g.in_editing and self._to_drag_point: # 编辑状态下准备拖拽轨迹点，遇到可拖拽轨迹点时改变光标
                 track_line = self.get_nearest_track_line(pos, manual_select=False)
                 if track_line:
                     self._dragged_point = track_line.selected_point
@@ -833,48 +833,48 @@ class MapCanvas(wx.Window):
 
     def on_left_dclick(self, event):
         pos = event.GetPosition()
-        if not self.g.in_editing:
+        if not g.in_editing:
             # 非编辑状态，左键双击选中该轨迹并缩放至适合屏幕
             track_line = self.get_nearest_track_line(pos, manual_select=True)
             if not track_line:
                 return
-            self.g.track_tree.selected_track_line = track_line
-            self.g.track_tree.SelectItem(self.g.track_tree.selected_track_line.tree_node)
+            g.track_tree.selected_track_line = track_line
+            g.track_tree.SelectItem(g.track_tree.selected_track_line.tree_node)
             track_line.is_visible = True
-            self.g.db_mgr.update_visible(track_line)
-            self.g.track_tree.label_visible_data(track_line)
+            g.db_mgr.update_visible(track_line)
+            g.track_tree.label_visible_data(track_line)
             self.zoom_to_track_line(track_line)
-        elif self.g.in_editing and self._self_drawing: # 编辑状态下自绘轨迹，双击结束
+        elif g.in_editing and self._self_drawing: # 编辑状态下自绘轨迹，双击结束
             if len(self._drawing_track.track_points) < 1:
-                self.g.edit_track_list.pop()
+                g.edit_track_list.pop()
             else:
                 now = datetime.datetime.now()
                 for point in self._drawing_track.track_points:
                     point.set_timestamp_local(now)   # 所有轨迹点设一个统一时间
                     
                 self._drawing_track.compute_track_line_args()
-                self.g.track_edit.InsertStringItem(len(self.g.edit_track_list), self._drawing_track.name)
+                g.track_edit.InsertStringItem(len(g.edit_track_list), self._drawing_track.name)
                 # self.repaint(REDRAW_TRACK) # 单击生成线段时已经重画过，结束后不必重复
             self._self_drawing = False
 
     def on_key_down(self, event):
-        if self.g.in_editing and self._self_drawing:
+        if g.in_editing and self._self_drawing:
             if event.GetKeyCode() == wx.WXK_DELETE or event.GetKeyCode() == wx.WXK_BACK:
                 if len(self._drawing_track.track_points) > 1:
                     self._drawing_track.track_points.pop()
                     self.repaint(mode=const.REDRAW_TRACK)
         else:
-            self.g.track_chart.on_key_down(event)
+            g.track_chart.on_key_down(event)
         
         if event.GetKeyCode() == wx.WXK_ESCAPE:
-            self.g.full_screen = False
-            self.g.frame.ShowFullScreen(False)
-            self.g.frame.Maximize()
-            # self.g.frame.Bind(wx.EVT_SIZE, self.g.frame.on_resize, self.g.frame)
+            g.full_screen = False
+            g.frame.ShowFullScreen(False)
+            g.frame.Maximize()
+            # g.frame.Bind(wx.EVT_SIZE, g.frame.on_resize, g.frame)
 
     def get_nearest_track_line(self, pos, manual_select=False):
         spx, spy = pos
-        if self.g.in_editing:
+        if g.in_editing:
             near_pos = [(spx, spy), (spx - 1, spy), (spx, spy - 1), (spx + 1, spy), (spx, spy + 1), (spx - 1, spy - 1),
                         (spx + 1, spy - 1), (spx - 1, spy + 1), (spx + 1, spy + 1), (spx - 2, spy - 2),
                         (spx - 1, spy - 2), (spx, spy - 2), (spx + 1, spy - 2), (spx + 2, spy - 2), (spx - 2, spy - 1),
@@ -899,7 +899,7 @@ class MapCanvas(wx.Window):
         elif len(track_line_list) == 1:
             if manual_select:
                 return track_line_list[0]
-            elif self.g.in_editing and track_line_list[0] is self.g.track_edit.selected_track_line:
+            elif g.in_editing and track_line_list[0] is g.track_edit.selected_track_line:
                 return track_line_list[0]
             return None
         elif manual_select:
@@ -910,8 +910,8 @@ class MapCanvas(wx.Window):
                 ret = dlg.sel_idx
             dlg.Destroy()
             return track_line_list[ret] if ret >= 0 else None
-        elif self.g.in_editing and self.g.track_edit.selected_track_line in track_line_list:
-            return self.g.track_edit.selected_track_line
+        elif g.in_editing and g.track_edit.selected_track_line in track_line_list:
+            return g.track_edit.selected_track_line
         else:
             return None
 
@@ -923,7 +923,7 @@ class MapCanvas(wx.Window):
 
     def zoom_to_track_line(self, track_line):
         self.zoom_to_range(track_line.fpx_min, track_line.fpx_max, track_line.fpy_min, track_line.fpy_max)
-        self.g.frame.repaint(canvas=const.REDRAW_NONE)
+        g.frame.repaint(canvas=const.REDRAW_NONE)
 
     def on_right_up(self, event):
         pos = event.GetPosition()
@@ -937,26 +937,26 @@ class MapCanvas(wx.Window):
             else:
                 track_line = self.get_nearest_track_line(pos, manual_select=True)
                 if track_line:
-                    if self.g.in_editing:
-                        if track_line is not self.g.track_edit.selected_track_line:
-                            self.g.track_edit.set_selected_track_line(track_line)
-                            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
-                        self.g.track_edit.popup_right_down(self.g.edit_track_list.index(track_line), track_line=track_line)
+                    if g.in_editing:
+                        if track_line is not g.track_edit.selected_track_line:
+                            g.track_edit.set_selected_track_line(track_line)
+                            g.frame.repaint(canvas=const.REDRAW_TRACK)
+                        g.track_edit.popup_right_down(g.edit_track_list.index(track_line), track_line=track_line)
                     else:
-                        if track_line is not self.g.track_tree.selected_track_line:
-                            self.g.track_tree.selected_track_line = track_line
-                            self.g.track_tree.SelectItem(self.g.track_tree.selected_track_line.tree_node)
-                            self.g.frame.repaint(canvas=const.REDRAW_TRACK)
-                        self.g.track_tree.popup_track_line_operations(track_line)
+                        if track_line is not g.track_tree.selected_track_line:
+                            g.track_tree.selected_track_line = track_line
+                            g.track_tree.SelectItem(g.track_tree.selected_track_line.tree_node)
+                            g.frame.repaint(canvas=const.REDRAW_TRACK)
+                        g.track_tree.popup_track_line_operations(track_line)
                 else:
                     self.popup_right_up(pos)
 
     def popup_right_up(self, pos):
         menu = wx.Menu()
-        if self.g.in_editing:
+        if g.in_editing:
             text = '退出编辑状态'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_edit_status, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_edit_status, menu_item)
     
             menu.AppendSeparator()
             text = '自绘轨迹'
@@ -971,22 +971,22 @@ class MapCanvas(wx.Window):
             menu.AppendSeparator()
             text = '配置在线地图'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_src_dlg, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_src_dlg, menu_item)
 
             menu.AppendSeparator()
-            text = '显示在线地图' if self.g.hide_map else '隐藏所有地图'
+            text = '显示在线地图' if g.hide_map else '隐藏所有地图'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_hide, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_hide, menu_item)
 
             menu.AppendSeparator()
-            text = '退出全屏显示' if self.g.full_screen else '全屏显示地图'
+            text = '退出全屏显示' if g.full_screen else '全屏显示地图'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_full_screen, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_full_screen, menu_item)
 
             menu.AppendSeparator()
             text = '地图窗口截屏'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_screenshot, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_screenshot, menu_item)
         else:
             text = '放置路点'
             menu_item = menu.Append(-1, text)
@@ -996,38 +996,38 @@ class MapCanvas(wx.Window):
             menu.AppendSeparator()
             text = '进入编辑状态'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_edit_status, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_edit_status, menu_item)
 
             menu.AppendSeparator()
             text = '导入轨迹文件'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.track_tree.on_open_file, menu_item)
+            self.Bind(wx.EVT_MENU, g.track_tree.on_open_file, menu_item)
 
             menu.AppendSeparator()
             text = '配置在线地图'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_src_dlg, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_src_dlg, menu_item)
 
             menu.AppendSeparator()
-            text = '显示在线地图' if self.g.hide_map else '隐藏所有地图'
+            text = '显示在线地图' if g.hide_map else '隐藏所有地图'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_hide, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_hide, menu_item)
 
             menu.AppendSeparator()
-            text = '退出全屏显示' if self.g.full_screen else '全屏显示地图'
+            text = '退出全屏显示' if g.full_screen else '全屏显示地图'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_full_screen, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_full_screen, menu_item)
 
             menu.AppendSeparator()
             text = '地图窗口截屏'
             menu_item = menu.Append(-1, text)
-            self.Bind(wx.EVT_MENU, self.g.frame.on_map_screenshot, menu_item)
+            self.Bind(wx.EVT_MENU, g.frame.on_map_screenshot, menu_item)
 
         self.PopupMenu(menu)
         menu.Destroy()
 
     def on_drag_point(self, event):
-        if self.g.track_edit.selected_track_line is None:
+        if g.track_edit.selected_track_line is None:
             do_log('请先选择轨迹再调整轨迹点...')
             return
         self._to_drag_point = True
@@ -1035,11 +1035,11 @@ class MapCanvas(wx.Window):
 
     def on_self_drawing(self, event):
         self._self_drawing = True
-        self.g.track_edit.selected_track_line = None # 自绘轨迹时时，去选其他轨迹，以避免画面抖动
+        g.track_edit.selected_track_line = None # 自绘轨迹时时，去选其他轨迹，以避免画面抖动
         self._drawing_track = TrackLine()
         self._drawing_track.name = '自绘轨迹%05d' % auto_id.get_id()
         # self._drawing_track.has_timestamp = False  # 还是保留时间好一点
-        self.g.edit_track_list.append(self._drawing_track)
+        g.edit_track_list.append(self._drawing_track)
         
     def on_place_pin(self, event):
         pos = self._popup_context[event.Id]
@@ -1047,18 +1047,18 @@ class MapCanvas(wx.Window):
         spy = pos[1]
         lon = self.get_lon_from_spx(spx)
         lat = self.get_lat_from_spy(spy)
-        name = search.find_name_from_pos(lon, lat, self.g.search_api)
+        name = search.find_name_from_pos(lon, lat, g.search_api)
         if not name:
             name = '未命名'
-        wpt = WayPoint(name, lon, lat, parent=self.g.data_root.uuid, bmp_index=self.g.default_wpt_bmp_index)
+        wpt = WayPoint(name, lon, lat, parent=g.data_root.uuid, bmp_index=g.default_wpt_bmp_index)
         wpt.spx = spx
         wpt.spy = spy
-        self.g.add_data(self.g.data_root, wpt)
-        self.g.track_tree.SelectItem(wpt.tree_node)
+        g.add_data(g.data_root, wpt)
+        g.track_tree.SelectItem(wpt.tree_node)
         self.repaint(const.REDRAW_COPY)
 
     def on_click_wpt(self, wpt):
-        self.g.track_tree.SelectItem(wpt.tree_node)
+        g.track_tree.SelectItem(wpt.tree_node)
         menu = wx.Menu()
 
         if wpt.alt <= 0:
@@ -1090,33 +1090,33 @@ class MapCanvas(wx.Window):
             
     def on_del_wpt(self, event):
         wpt = self._popup_context_wpt[event.Id]
-        self.g.del_wpt(wpt)
+        g.del_wpt(wpt)
         self.repaint(const.REDRAW_COPY)
         do_log('路点“%s”被删除...' % wpt.name)
 
     def on_hide_wpt(self, event):
         wpt = self._popup_context_wpt[event.Id]
         wpt.is_visible = False
-        self.g.db_mgr.update_visible(wpt)
-        self.g.track_tree.label_visible_data(wpt)
+        g.db_mgr.update_visible(wpt)
+        g.track_tree.label_visible_data(wpt)
         self.repaint(const.REDRAW_COPY)
         do_log('路点“%s”被隐藏...' % wpt.name)
 
     def on_change_wpt_pin(self, event):
         wpt = self._popup_context_wpt[event.Id]
-        dlg = PinSelDlg(self.g, wpt)
+        dlg = PinSelDlg(wpt)
         dlg.CentreOnParent()
         dlg.Show()
             
     def on_get_wpt_alt(self, event):
         wpt = self._popup_context_wpt[event.Id]
-        alt = self.g.srtm_mgr.get_alt_local(wpt.lon, wpt.lat)
+        alt = g.srtm_mgr.get_alt_local(wpt.lon, wpt.lat)
         if alt is not None:
             wpt.alt = alt
             self.repaint(const.REDRAW_COPY)
             do_log('路点高程数据获取成功...')
         else:
-            dialog = SrtmWptDlg(g=self.g, wpt=wpt)
+            dialog = SrtmWptDlg(wpt=wpt)
             dialog.CentreOnParent()
             dialog.Show()
 
@@ -1186,8 +1186,8 @@ class MapCanvas(wx.Window):
         
     def on_del_photo(self, event):
         photo = self._popup_context_photo[event.Id]
-        self.g.photo_list.remove(photo)
-        self.g.db_mgr.del_photo(photo)
+        g.photo_list.remove(photo)
+        g.db_mgr.del_photo(photo)
         self.repaint(const.REDRAW_COPY)
         do_log('照片“%s”被删除...' % photo.name)
 
