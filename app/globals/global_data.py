@@ -85,7 +85,7 @@ class GlobalData:
 
         self.db_mgr = DbManager(self.data_path)
         self.tile_mgr = TileManager(self.data_path, self.tile_transparent_bmp)
-        self.srtm_mgr = SrtmManager(self)
+        self.srtm_mgr = SrtmManager(self.data_path)
         self.frame = frame
 
     def read_cfg(self, path):

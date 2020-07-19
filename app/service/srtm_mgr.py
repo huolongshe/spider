@@ -35,11 +35,10 @@ DATAGRAM_SIZE = 1380
 
 
 class SrtmManager:
-    def __init__(self, g):
-        self.g = g
+    def __init__(self, data_path):
         self._srtm_cache_usgs = {}
         self._srtm_cache_cagar = {}
-        self._srtm_cache_path = os.path.join(self.g.data_path, 'srtmcache')
+        self._srtm_cache_path = os.path.join(data_path, 'srtmcache')
         if not os.path.exists(self._srtm_cache_path):
             os.mkdir(self._srtm_cache_path)
             
@@ -59,16 +58,12 @@ class SrtmManager:
         self._srtm_zip_segments = [b''] * THREAD_NUM
         
     def get_alt_local(self, lon, lat):
-        if self.g.srtm_url_index == 1:
-            return self.get_alt_local_cgiar(lon, lat)
-        else:
-            return self.get_alt_local_usgs(lon, lat)
-            
+        from app.globals.global_data import g
+        return self.get_alt_local_cgiar(lon, lat) if g.srtm_url_index == 1 else self.get_alt_local_usgs(lon, lat)
+
     def get_alt_network(self, lon, lat):
-        if self.g.srtm_url_index == 1:
-            return self.get_alt_network_cagar(lon, lat)
-        else:
-            return self.get_alt_network_usgs(lon, lat)
+        from app.globals.global_data import g
+        return self.get_alt_network_cagar(lon, lat) if g.srtm_url_index == 1 else self.get_alt_network_usgs(lon, lat)
 
     def get_alt_local_usgs(self, lon, lat):
         lon_i = math.floor(lon)
