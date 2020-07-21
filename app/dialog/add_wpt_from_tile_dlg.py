@@ -3,7 +3,7 @@
 import wx
 
 
-class AddWptDlg(wx.Dialog):
+class AddWptFromTileDlg(wx.Dialog):
     def __init__(self):
         wx.Dialog.__init__(self, None, -1, '根据瓦片坐标添加路点', size=(800, 360))
 
