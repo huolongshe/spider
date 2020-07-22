@@ -14,7 +14,8 @@ from app.dialog.map_src_dlg import MapSrcDlg
 from app.dialog.search_dlg import WptSearchDlg, RouteSearchDlg
 from app.dialog.search_api_dlg import SearchApiDlg
 from app.dialog.srtm_src_dlg import SrtmSrcDlg
-from app.dialog.add_wpt_dlg import AddWptDlg
+from app.dialog.add_wpt_from_tile_dlg import AddWptFromTileDlg
+from app.dialog.add_wpt_from_coord_dlg import AddWptFromCoordDlg
 from app.model.track_line import TrackLine
 from app.model.way_point import WayPoint
 from app.model.photo import Photo
@@ -231,8 +232,12 @@ class MainFrame(wx.Frame):
         self._menu_del_all_wpts = menu_wpt_pin.Append(-1, '删除所有路点', '删除所有路点数据')
         self.Bind(wx.EVT_MENU, self.on_del_all_wpts, self._menu_del_all_wpts)
         menu_wpt_pin.AppendSeparator()
-        self._menu_add_wpt_from_tile = menu_wpt_pin.Append(-1, '添加瓦片路点', '根据瓦片URL坐标添加路点')
+        menu_add_wpt = wx.Menu()
+        self._menu_add_wpt_from_coord = menu_add_wpt.Append(-1, '添加经纬度路点', '根据经纬度坐标添加路点')
+        self.Bind(wx.EVT_MENU, self.on_add_wpt_from_coord,self._menu_add_wpt_from_coord)
+        self._menu_add_wpt_from_tile = menu_add_wpt.Append(-1, '添加瓦片路点', '根据瓦片URL坐标添加路点')
         self.Bind(wx.EVT_MENU, self.on_add_wpt_from_tile, self._menu_add_wpt_from_tile)
+        menu_wpt_pin.AppendSubMenu(menu_add_wpt, '添加路点', '根据坐标添加路点')
 
         menu_photo = wx.Menu()
         menu_bar.Append(menu_photo, '照片')
@@ -423,6 +428,8 @@ class MainFrame(wx.Frame):
             self._menu_default_pin.Enable(True)
             self._menu_hide_wpts.Enable(True)
             self._menu_del_all_wpts.Enable(True)
+            self._menu_add_wpt_from_coord.Enable(True)
+            self._menu_add_wpt_from_tile.Enable(True)
             self._menu_photo_add.Enable(True)
             self._menu_photo_clear.Enable(True)
             self._tb_edit_enter.Enable(True)
@@ -453,6 +460,8 @@ class MainFrame(wx.Frame):
             self._menu_default_pin.Enable(False)
             self._menu_hide_wpts.Enable(False)
             self._menu_del_all_wpts.Enable(False)
+            self._menu_add_wpt_from_coord.Enable(False)
+            self._menu_add_wpt_from_tile.Enable(False)
             self._menu_photo_add.Enable(False)
             self._menu_photo_clear.Enable(False)
             self._tb_edit_enter.Enable(False)
@@ -910,8 +919,25 @@ class MainFrame(wx.Frame):
         self.enable_undo()
         do_log('已删除所有路点数据...')
 
+    def on_add_wpt_from_coord(self, event):
+        dlg = AddWptFromCoordDlg()
+        dlg.CentreOnParent()
+        if dlg.ShowModal() == wx.ID_OK:
+            if dlg.lon.GetValue() and dlg.lat.GetValue():
+                lat = float(dlg.lat.GetValue())
+                lon = float(dlg.lon.GetValue())
+                name = search.find_name_from_pos(lon, lat, g.search_api)
+                wpt = WayPoint(name, lon, lat,
+                               parent=g.data_root.uuid, bmp_index=g.default_wpt_bmp_index)
+                g.add_data(g.data_root, wpt)
+                g.track_tree.SelectItem(wpt.tree_node)
+                self.repaint(const.REDRAW_COPY)
+            else:
+                do_log('经纬度坐标都必须有值...')
+        dlg.Destroy()
+
     def on_add_wpt_from_tile(self, event):
-        dlg = AddWptDlg()
+        dlg = AddWptFromTileDlg()
         dlg.CentreOnParent()
         if dlg.ShowModal() == wx.ID_OK:
             if dlg.tile_x.GetValue() and dlg.tile_y.GetValue() and dlg.tile_z.GetValue():
