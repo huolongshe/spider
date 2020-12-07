@@ -1121,7 +1121,6 @@ class MapCanvas(wx.Window):
             dialog.Show()
 
     def display_spot_info(self, spot):
-        tip = spot.get_tip()
         win = SpotTipPopup(self, spot)
         win.Position(self.ClientToScreen(spot.spx, spot.spy), (0, 0))
         win.Show()

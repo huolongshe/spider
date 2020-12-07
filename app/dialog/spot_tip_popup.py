@@ -22,7 +22,7 @@ class SpotTipPopup(wx.PopupWindow):
         thread.start()
 
     def destroy_self(self):
-        for i in range(1000):
+        for i in range(150):
             wx.MilliSleep(2)
             try:
                 self.Position(self.parent.ClientToScreen(self.spot.spx, self.spot.spy), (0, 0))
