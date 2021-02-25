@@ -3,6 +3,7 @@
 from app.globals import const
 from app.service import google_search
 from app.service import baidu_search
+from app.service import tianditu_search
 
 
 def find_pos_from_name(name, api):
@@ -34,6 +35,6 @@ def find_name_from_pos(lon, lat, api):
 
 
 def find_drive_route(start, end, api):
-    return google_search.find_drive_route(start, end)  # 百度路径搜索暂时没搞定，先用google的
+    return tianditu_search.find_drive_route(start, end)  # 百度路径搜索暂时没搞定，先用tianditu的
 
 
