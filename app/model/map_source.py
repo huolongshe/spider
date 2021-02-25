@@ -7,11 +7,9 @@ from app.globals import const
 
 
 class MapSource:
-    id_index = 0
-    
+
     def __init__(self, source, visible=False):
-        MapSource.id_index += 1
-        self.id = 'map%03d' % MapSource.id_index
+        self.id = source['id']
         self.name = source['name']
         self.url_pattern = source['url']
         self.zoom_min = source['zoom_min']

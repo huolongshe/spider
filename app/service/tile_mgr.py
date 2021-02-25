@@ -60,7 +60,7 @@ class TileManager:
             file_time = os.path.getmtime(tile_path)
             now = datetime.datetime.now()
             time_delta = (now - datetime.datetime.fromtimestamp(file_time)).days
-            if time_delta < 30:
+            if time_delta < 30 or tile_id.startswith('map001'):
                 try:
                     with open(tile_path, 'rb') as fn:
                         self._tile_cache[tile_id] = wx.Bitmap(wx.Image(io.BytesIO(fn.read())))
@@ -76,8 +76,8 @@ class TileManager:
     def get_tile_network(self, tile_url, tile_id, file_format):
         tile_path = os.path.join(self._cache_path, '%s.%s' % (tile_id, file_format))
         try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            response = requests.get(tile_url, headers=headers, timeout=const.DOWNLOAD_TIMEOUT)
+            # headers = {'User-Agent': 'Mozilla/5.0'}
+            response = requests.get(tile_url, timeout=const.DOWNLOAD_TIMEOUT)
             if 200 == response.status_code :
                 img = response.content
                 self._tile_cache[tile_id] = wx.Bitmap(wx.Image(io.BytesIO(img)))
