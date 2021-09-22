@@ -3,6 +3,8 @@
     霍龙社
     huolongshe@126.com
 
+最新版本请访问： https://gitee.com/huolongshe/spider
+
 ---
 
 ### 功能特性：
@@ -64,7 +66,7 @@
 
     2. Clone或下载源代码。
     
-            git clone https://github.com/huolongshe/spider
+            git clone https://gitee.com/huolongshe/spider
 
     3. 安装依赖包。进入spider.py所在文件夹，在命令行终端中执行：
 
@@ -84,7 +86,7 @@
 
 - 直接下载运行可执行文件
 
-    1. 进入release页面：https://github.com/huolongshe/spider/releases ，找到相应版本的spider.exe可执行文件并下载。
+    1. 进入release页面：https://gitee.com/huolongshe/spider/releases ，找到相应版本的spider.exe可执行文件并下载。
 
     2. 在电脑中新建一个空文件夹，将spider.exe文件拷贝至该文件夹。
 
