@@ -2,5 +2,5 @@ wxpython==4.0.1
 pyyaml
 requests
 numpy
-pillow==4.2.0
+pillow==9.0.1
 pyinstaller
